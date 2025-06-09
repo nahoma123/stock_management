@@ -1,0 +1,32 @@
+<odoo>
+    <data>
+        <!-- Form View for Tenant Creation Wizard -->
+        <record id="view_saas_tenant_creation_wizard_form" model="ir.ui.view">
+            <field name="name">saas.tenant.creation.wizard.form</field>
+            <field name="model">saas.tenant.creation.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Create New Tenant">
+                    <group>
+                        <field name="name"/>
+                        <field name="subdomain"/>
+                    </group>
+                    <footer>
+                        <button name="action_confirm_creation" string="Create Tenant" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action to launch the Tenant Creation Wizard -->
+        <record id="action_launch_tenant_creation_wizard" model="ir.actions.act_window">
+            <field name="name">Create New Tenant</field>
+            <field name="res_model">saas.tenant.creation.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field> <!-- Opens in a modal -->
+        </record>
+
+        <!-- Menu item to launch the wizard -->
+        <menuitem id="menu_create_tenant_wizard" name="Create New Tenant" parent="menu_saas_root" action="action_launch_tenant_creation_wizard" sequence="1"/>
+    </data>
+</odoo>

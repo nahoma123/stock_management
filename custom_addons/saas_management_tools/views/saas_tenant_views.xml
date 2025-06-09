@@ -1,0 +1,59 @@
+<odoo>
+    <data>
+        <!-- Action to open SaaS Tenants -->
+        <record id="action_saas_tenant_list" model="ir.actions.act_window">
+            <field name="name">SaaS Tenants</field>
+            <field name="res_model">saas.tenant</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <!-- Tree View for SaaS Tenants -->
+        <record id="view_saas_tenant_tree" model="ir.ui.view">
+            <field name="name">saas.tenant.tree</field>
+            <field name="model">saas.tenant</field>
+            <field name="arch" type="xml">
+                <tree string="SaaS Tenants">
+                    <field name="name"/>
+                    <field name="subdomain"/>
+                    <field name="db_name"/>
+                    <field name="state"/>
+                                <field name="create_date"/>
+                                <field name="license_expiry_date"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Form View for SaaS Tenants -->
+        <record id="view_saas_tenant_form" model="ir.ui.view">
+            <field name="name">saas.tenant.form</field>
+            <field name="model">saas.tenant</field>
+            <field name="arch" type="xml">
+                <form string="SaaS Tenant">
+                    <header>
+                         <button name="action_create_tenant_database" string="Create Database" type="object" class="oe_highlight" attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                         <field name="state" widget="statusbar" statusbar_visible="draft,creating,active,error"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="subdomain"/>
+                            <field name="db_name"/>
+                            <field name="create_date" readonly="1"/>
+                            <field name="license_expiry_date"/>
+                        </group>
+                        <group string="Details">
+                            <field name="notes"/>
+                        </group>
+                        <group string="Log" attrs="{'invisible': [('creation_log', '=', False)]}">
+                             <field name="creation_log" readonly="1" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Menu Item -->
+        <menuitem id="menu_saas_root" name="SaaS Management" sequence="10"/>
+        <menuitem id="menu_saas_tenants" name="Tenants" parent="menu_saas_root" action="action_saas_tenant_list" sequence="10"/>
+    </data>
+</odoo>

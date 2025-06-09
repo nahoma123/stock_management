@@ -3,7 +3,9 @@ version: '3.8' # Specifies the Docker Compose version
 services:
   # Odoo Application Service
   odoo:
-    image: odoo:18.0 # Use the official stable Odoo 18.0 image
+    build:
+      context: .
+      dockerfile: Dockerfile.odoo
     container_name: odoo_app_18 # Simple container name
     depends_on:
       - db # Make sure database starts first
@@ -21,7 +23,42 @@ services:
       - PASSWORD=nahom_admin # Database password (CHANGE THIS!)
     restart: unless-stopped
 
-  # PostgreSQL Database Service
+  # PostgreSQL Database Service for Superadmin
+  db_superadmin:
+    image: postgres:16
+    container_name: odoo_db_superadmin
+    environment:
+      - POSTGRES_USER=odoo_superadmin
+      - POSTGRES_PASSWORD=superadmin_db_password
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres-superadmin-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+  # Odoo Superadmin Service
+  odoo_superadmin:
+    build:
+      context: .
+      dockerfile: Dockerfile.odoo
+    container_name: odoo_superadmin_app
+    depends_on:
+      - db_superadmin
+    ports:
+      - "18070:8069"
+    volumes:
+      - odoo-superadmin-data:/var/lib/odoo
+      - ./custom_addons:/mnt/extra-addons
+      - ./superadmin.conf:/etc/odoo/odoo.conf
+    environment:
+      - HOST=db_superadmin
+      - PORT=5432
+      - USER=odoo_superadmin
+      - PASSWORD=superadmin_db_password
+    restart: unless-stopped
+
+  # PostgreSQL Database Service (for Tenant Template)
   db:
     image: postgres:16 # Use PostgreSQL version 16
     container_name: odoo_db_18 # Simple container name
@@ -39,3 +76,5 @@ services:
 volumes:
   odoo-data:
   postgres-data:
+  postgres-superadmin-data:
+  odoo-superadmin-data:

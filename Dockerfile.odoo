@@ -1,0 +1,12 @@
+FROM odoo:18.0
+
+# Switch to root to install packages
+USER root
+
+# Install postgresql-client
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
+
+# Switch back to the default odoo user
+USER odoo
