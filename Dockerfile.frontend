@@ -1,0 +1,25 @@
+# Dockerfile.frontend
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+# Copy frontend source code and necessary config
+COPY vite.config.ts .
+COPY tsconfig.json .
+COPY tailwind.config.ts .
+COPY postcss.config.js .
+COPY components.json .
+COPY ./client ./client
+COPY ./shared ./shared 
+
+# Expose the Vite development port (check vite.config.ts, default is 5173)
+EXPOSE ${FRONTEND_PORT:-5173}
+
+# Command to run the frontend development server
+# Check your package.json for the actual dev script for the client
+CMD ["npm", "run", "dev:client"]

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Hide existing menus by referencing their XML ID -->
+    <!-- Find XML IDs: Activate developer mode (Settings->General Settings->Developer Tools->Activate Developer Mode), then hover over menu item -> Debug Menu (#) -> View Metadata -->
+
+    <record id="mail.menu_root_discuss" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="calendar.menu_root" model="ir.ui.menu">
+         <field name="active" eval="False"/>
+    </record>
+    <!-- Add more records here to hide other top-level menus like Website, Lunch, etc. if not needed -->
+
+
+    <!-- Create your own top-level menu -->
+    <menuitem
+        id="menu_boutique_root"
+        name="Boutique"
+        sequence="1"  <!-- Controls order of top menus -->
+        web_icon="boutique_theme,static/description/icon.png" <!-- Optional: Create an icon -->
+    />
+
+    <!-- Create sub-menus under your "Boutique" menu -->
+    <!-- Example: Link to existing Product Variants screen -->
+     <menuitem
+        id="menu_boutique_products"
+        name="Products"
+        parent="menu_boutique_root"
+        action="stock.product_template_action_product" <!-- Action ID for Product Templates/Variants -->
+        sequence="10"
+    />
+
+    <!-- Example: Link to existing POS screen -->
+    <menuitem
+        id="menu_boutique_pos"
+        name="Point of Sale"
+        parent="menu_boutique_root"
+        action="point_of_sale.action_pos_config_list" <!-- Action ID for POS Config list -->
+        sequence="20"
+    />
+
+     <!-- Example: Link to existing Customers screen -->
+    <menuitem
+        id="menu_boutique_customers"
+        name="Customers"
+        parent="menu_boutique_root"
+        action="base.action_partner_form" <!-- Action ID for Contacts/Customers -->
+        sequence="30"
+    />
+
+    <!-- Add more submenus linking to specific actions (Inventory Adjustments, CRM Leads, etc.) -->
+
+</odoo>

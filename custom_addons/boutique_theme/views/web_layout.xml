@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="custom_layout" inherit_id="web.layout" name="Custom Layout">
+        <!-- Replace the default Odoo Logo -->
+        <xpath expr="//header//a[hasclass('o_navbar_brand')]/img[hasclass('o_logo')]" position="replace">
+            <img src="/boutique_theme/static/src/img/logo.png" alt="Boutique Logo" style="max-height: 30px;"/> <!-- Adjust style as needed -->
+        </xpath>
+
+        <!-- Optional: Remove Odoo text link next to logo if it exists -->
+        <!--
+        <xpath expr="//header//a[hasclass('o_navbar_brand')]/span" position="replace">
+        </xpath>
+        -->
+
+         <!-- Optional: Remove "Odoo" from the browser page title -->
+        <xpath expr="//t[@t-set='body_classname']" position="after">
+             <t t-set="html_data" t-value="dict(html_data or {}, title=title.replace('Odoo', 'Your Boutique ERP Name'))"/>
+        </xpath>
+    </template>
+</odoo>

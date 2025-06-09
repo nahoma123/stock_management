@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shopping_portal_product_user,shopping.portal.product.user,model_shopping_portal_product,base.group_portal,1,0,0,0
+access_shopping_portal_cart_user,shopping.portal.cart.user,model_shopping_portal_cart,base.group_portal,1,1,1,1
+access_shopping_portal_cart_line_user,shopping.portal.cart.line.user,model_shopping_portal_cart_line,base.group_portal,1,1,1,1 

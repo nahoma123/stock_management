@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_products" name="Portal Products">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h2>Available Products</h2>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <t t-foreach="products" t-as="product">
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <img t-if="product.image" t-att-src="image_data_uri(product.image)" class="card-img-top" alt="Product Image"/>
+                                <div class="card-body">
+                                    <h5 class="card-title"><t t-esc="product.name"/></h5>
+                                    <p class="card-text"><t t-esc="product.description"/></p>
+                                    <p class="card-text">
+                                        <strong>Price: </strong>
+                                        <t t-esc="product.price"/>
+                                        <t t-esc="product.currency_id.symbol"/>
+                                    </p>
+                                    <button class="btn btn-primary add-to-cart" t-att-data-product-id="product.id">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+    
+    <template id="portal_cart" name="Shopping Cart">
+        <t t-call="portal.portal_layout">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h2>Your Shopping Cart</h2>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Subtotal</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="cart.line_ids" t-as="line">
+                                    <tr>
+                                        <td><t t-esc="line.product_id.name"/></td>
+                                        <td>
+                                            <input type="number" t-att-value="line.quantity" 
+                                                   class="form-control quantity-input" 
+                                                   t-att-data-line-id="line.id"/>
+                                        </td>
+                                        <td><t t-esc="line.price_unit"/></td>
+                                        <td><t t-esc="line.price_subtotal"/></td>
+                                        <td>
+                                            <button class="btn btn-danger remove-item" 
+                                                    t-att-data-line-id="line.id">
+                                                Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                    <td><strong><t t-esc="cart.total_amount"/></strong></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        
+                        <div class="text-right">
+                            <button class="btn btn-success checkout-btn">
+                                Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo> 

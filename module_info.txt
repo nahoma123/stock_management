@@ -1,0 +1,18 @@
+This is a standard Odoo module structure:
+
+my_module/
+├── __init__.py           # Python package initialization
+├── __manifest__.py       # Module manifest file (metadata)
+├── models/               # Data models
+│   ├── __init__.py
+│   └── models.py
+├── views/                # XML view definitions
+│   └── views.xml
+├── security/            # Access rights and rules
+│   └── ir.model.access.csv
+├── static/               # Static assets (CSS, JS, images)
+│   ├── description/
+│   │   └── icon.png
+│   └── src/
+└── data/                 # Demo data and default configurations
+    └── demo.xml

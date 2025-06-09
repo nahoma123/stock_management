@@ -1,0 +1,45 @@
+# Dockerfile.backend
+
+# Use an official Node.js runtime as a parent image
+# Choose a version compatible with your project (check package.json engines field if specified)
+FROM node:20-alpine AS base
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json (or yarn.lock)
+COPY package*.json ./
+
+# Install app dependencies using npm ci for consistency
+RUN npm ci
+
+# Copy necessary config files and source code
+COPY drizzle.config.ts .
+COPY tsconfig.json .
+COPY ./server ./server
+COPY ./shared ./shared
+
+# --- Development Stage ---
+FROM base AS development
+# Expose the port the app runs on (read from .env or hardcode if known)
+# We'll use the environment variable set in docker-compose
+EXPOSE ${BACKEND_PORT:-3000}
+# Command to run the backend development server
+# Check your package.json for the actual dev script for the server
+# Assuming a script like "dev:server" exists or you run index.ts directly
+# If using tsx or similar for direct TS execution:
+CMD ["npm", "run", "dev:server"]
+# Or if you have a build step and run JS:
+# RUN npm run build:server
+# CMD ["node", "dist/server/index.js"]
+
+# --- Production Stage (Optional for now, but good practice) ---
+# FROM base AS production
+# ENV NODE_ENV=production
+# Copy only necessary production files from 'base' stage if needed
+# RUN npm run build:server # Assuming a build script that outputs to e.g., ./dist
+# Copy built files
+# COPY --from=base /app/dist ./dist
+# COPY --from=base /app/node_modules ./node_modules # Or RUN npm ci --only=production
+# EXPOSE ${BACKEND_PORT:-3000}
+# CMD ["node", "dist/server/index.js"] # Command to run the built server

@@ -1,0 +1,41 @@
+version: '3.8' # Specifies the Docker Compose version
+
+services:
+  # Odoo Application Service
+  odoo:
+    image: odoo:18.0 # Use the official stable Odoo 18.0 image
+    container_name: odoo_app_18 # Simple container name
+    depends_on:
+      - db # Make sure database starts first
+    ports:
+      - "18069:8069" # Map host port 18069 to container port 8069 (access via http://localhost:18069)
+    volumes:
+      - odoo-data:/var/lib/odoo # Persistent volume for Odoo data (filestore)
+      - ./custom_addons:/mnt/extra-addons # <<< CHANGE HERE (hyphen to underscore)
+      - ./odoo.conf:/etc/odoo/odoo.conf
+
+    environment:
+      - HOST=db # Hostname of the database service
+      - PORT=5432 # Standard PostgreSQL port
+      - USER=odoo # Database username (matches db service)
+      - PASSWORD=nahom_admin # Database password (CHANGE THIS!)
+    restart: unless-stopped
+
+  # PostgreSQL Database Service
+  db:
+    image: postgres:16 # Use PostgreSQL version 16
+    container_name: odoo_db_18 # Simple container name
+    environment:
+      # These credentials MUST match the USER and PASSWORD in the 'odoo' service environment
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=nahom_admin # Use the SAME password as above (CHANGE THIS!)
+      - POSTGRES_DB=postgres # Default database name
+    volumes:
+      # Persistent volume for PostgreSQL data (using the default data directory path)
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+# Define named volumes managed by Docker for persistent data storage
+volumes:
+  odoo-data:
+  postgres-data:

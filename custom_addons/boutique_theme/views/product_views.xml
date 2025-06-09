@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit the product template form view -->
+    <record id="product_template_form_view_inherit_boutique" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.boutique</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/> <!-- Find correct base view ID using developer mode -->
+        <field name="arch" type="xml">
+            <!-- Hide the 'Routes' field -->
+            <xpath expr="//field[@name='route_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Hide the 'Weight' and 'Volume' fields on the inventory tab -->
+             <xpath expr="//group[@name='group_lots_and_weight']/group[2]" position="attributes">
+                 <attribute name="invisible">1</attribute>
+             </xpath>
+
+            <!-- You can also move fields, change labels, add new custom fields here -->
+            <!-- Example: Change label of 'Sales Price' -->
+            <!--
+            <xpath expr="//field[@name='list_price']" position="attributes">
+                <attribute name="string">Retail Price</attribute>
+            </xpath>
+            -->
+        </field>
+    </record>
+</odoo>

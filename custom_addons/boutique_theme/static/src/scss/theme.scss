@@ -1,0 +1,18 @@
+// ./custom_addons/boutique_theme/static/src/scss/theme.scss
+
+// Example: Change primary color (affects buttons, links etc.)
+// Find Odoo's variables (inspect element in browser or look in web module source)
+// $o-brand-primary: #714B67; // Example purple color
+
+// Example: Change default background
+// body {
+//   background-color: #f9f9f9 !important; // Light grey background
+// }
+
+// You can add more specific CSS/SCSS rules here to override styles
+.o_navbar_brand {
+    // Potentially hide the default text logo if you only want an image
+    // display: none !important;
+}
+
+// Add more specific overrides as needed
