@@ -25,9 +25,9 @@ Shopping Portal Features:
     ],
     'data': [
         'security/ir.model.access.csv',
-        'views/portal_templates.xml',
-        'views/portal_my_home.xml',
-        'views/portal_layout.xml',
+        # 'views/portal_templates.xml',
+        # 'views/portal_my_home.xml',
+        # 'views/portal_layout.xml',
         'views/registration_templates.xml',
         'views/product_templates.xml',
     ],
