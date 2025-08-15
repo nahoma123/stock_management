@@ -8,7 +8,7 @@ This project is a multi-tenant Odoo SaaS platform. It uses Docker for containeri
 
 ## 2. Technologies
 
-*   **Backend:** Odoo (Python)
+*   **Backend:** Odoo (Python), likely version 17 or newer.
 *   **Frontend:** Node.js, Vite, Tailwind CSS
 *   **Database:** PostgreSQL
 *   **Containerization:** Docker, Docker Compose
@@ -92,3 +92,23 @@ my_module/
 └── data/                 # Demo data and default configurations
     └── demo.xml
 ```
+
+---
+
+## 8. Key Learnings & Developer Notes
+
+*   **Odoo 17 View Types:** The `tree` view type has been renamed to `list`. When creating list views in XML for Odoo 17+, the root tag of the view's `arch` must be `<list>` and the `view_mode` in the corresponding `ir.actions.act_window` must use `'list'`. Using the legacy `<tree>` tag will cause a `ValueError: Wrong value for ir.ui.view.type: 'tree'` during module installation or upgrade.
+*   **Odoo 17 View Attributes:** The `attrs` attribute is deprecated for dynamically changing view element properties. Use the `invisible` attribute with a domain directly on the element instead (e.g., `invisible="[('state', '!=', 'draft')]"`).
+*   **Odoo XML Loading Order:** Odoo parses data files in the order they are listed in `__manifest__.py`. If an XML record refers to an ID in another file (e.g., an action using a `view_id`), the file containing the referenced ID must be listed first.
+*   **Odoo Caching:** When making changes to `__manifest__.py` or other non-Python files, a simple browser refresh is not enough. You must either use the "Update Apps List" feature or, more reliably, restart the Odoo server container to ensure changes are loaded.
+
+## 9. Recent Activity Log (What happened last time?)
+
+*   **When:** August 15, 2025
+*   **What:** Successfully debugged and installed the `saas_management_tools` custom Odoo module.
+*   **Why it was failing:** The module was written with syntax from older Odoo versions, causing multiple compatibility errors with the project's Odoo 17 environment.
+*   **How it was solved:** We performed an iterative debugging session:
+    1.  Isolated the initial, misleading `ValueError` by commenting out the tree view.
+    2.  Fixed a deprecated `attrs` attribute in the form view.
+    3.  Fixed multiple "External ID not found" and `FileNotFoundError` errors by correcting the file loading order and file paths in `__manifest__.py`.
+    4.  Finally diagnosed the root `ValueError` as being caused by the `tree` view tag, which was corrected to `list`.

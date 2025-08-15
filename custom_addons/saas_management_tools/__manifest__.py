@@ -8,8 +8,8 @@
     'data': [
         'security/ir.model.access.csv',
         'views/saas_tenant_views.xml',
+        'views/tenant_creation_wizard_views.xml',
         'views/saas_dashboard_views.xml',
-        'wizards/tenant_creation_wizard_views.xml',
     ],
     'installable': True,
     'application': True, # So it appears in the Apps list of superadmin
