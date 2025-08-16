@@ -39,7 +39,6 @@
                             <field name="name"/>
                             <field name="subdomain"/>
                             <field name="db_name"/>
-                            <field name="state" readonly="1"/>
                             <field name="create_date" readonly="1"/>
                             <field name="license_expiry_date"/>
                         </group>

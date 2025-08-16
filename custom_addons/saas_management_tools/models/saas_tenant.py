@@ -15,7 +15,20 @@ class SaasTenant(models.Model):
     def create(self, vals):
         if vals.get('name', 'New') == 'New':
             vals['name'] = self.env['ir.sequence'].next_by_code('saas.tenant') or '/'
+        # Explicitly set show_create_button based on initial state.
+        # The 'state' field has a default of 'draft', but this handles cases
+        # where an initial state is provided during creation.
+        if vals.get('state'):
+            vals['show_create_button'] = (vals['state'] == 'draft')
+        else:
+            # If no state is provided, it will default to 'draft', so the button should be shown.
+            vals['show_create_button'] = True
         return super(SaasTenant, self).create(vals)
+
+    def write(self, vals):
+        if 'state' in vals:
+            vals['show_create_button'] = (vals['state'] == 'draft')
+        return super(SaasTenant, self).write(vals)
     subdomain = fields.Char(string='Subdomain', required=True)
     db_name = fields.Char(string='Database Name', compute='_compute_db_name', store=True, readonly=True)
     state = fields.Selection([
@@ -24,11 +37,10 @@ class SaasTenant(models.Model):
         ('active', 'Active'),
         ('error', 'Error'),
     ], string='Status', default='draft', copy=False)
-    show_create_button = fields.Boolean(compute='_compute_show_create_button')
+    show_create_button = fields.Boolean(string="Show Create Button", default=True, store=True)
     creation_log = fields.Text(string="Creation Log", readonly=True)
     license_expiry_date = fields.Date(string='License Expiry Date', copy=False)
     notes = fields.Text(string='Internal Notes')
-    dashboard_summary = fields.Text(string="Dashboard Summary", compute='_compute_dashboard_summary')
 
     _sql_constraints = [
         ('subdomain_uniq', 'unique (subdomain)', 'Subdomain must be unique!'),
@@ -158,35 +170,6 @@ class SaasTenant(models.Model):
             self.state = 'error'
         finally:
             self.env.cr.commit() # Commit changes to state and log
-
-    def _compute_dashboard_summary(self):
-        # This method computes for each record, which is not ideal for a global summary.
-        # For a true dashboard, this logic would be on a separate model or via read_group.
-        # Here, we'll just make it available on any saas.tenant record,
-        # and the dashboard view will show it from a dummy record or the first one.
-        # A better approach for a real dashboard: use a transient model.
-        # For this subtask, we'll simplify and assume this text will be shown on a generic dashboard view.
-
-        tenants = self.env['saas.tenant'].search([]) # Search all tenants
-        total_tenants = len(tenants)
-        active_tenants = len(tenants.filtered(lambda t: t.state == 'active'))
-        error_tenants = len(tenants.filtered(lambda t: t.state == 'error'))
-        draft_tenants = len(tenants.filtered(lambda t: t.state == 'draft'))
-        creating_tenants = len(tenants.filtered(lambda t: t.state == 'creating'))
-
-        summary = f"Total Tenants: {total_tenants}\n"
-        summary += f"Active: {active_tenants}\n"
-        summary += f"Error: {error_tenants}\n"
-        summary += f"Draft: {draft_tenants}\n"
-        summary += f"Creating: {creating_tenants}"
-
-        for record in self: # Assign the same summary to all records queried by the ORM for this compute
-            record.dashboard_summary = summary
-
-    @api.depends('state')
-    def _compute_show_create_button(self):
-        for record in self:
-            record.show_create_button = (record.state == 'draft')
 
     def action_create_tenant_database(self):
         for tenant in self:
