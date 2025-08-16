@@ -9,7 +9,13 @@ class SaasTenant(models.Model):
     _name = 'saas.tenant'
     _description = 'SaaS Tenant'
 
-    name = fields.Char(string='Tenant Name', required=True)
+    name = fields.Char(string='Tenant Name', required=True, copy=False, readonly=True, default='New')
+
+    @api.model
+    def create(self, vals):
+        if vals.get('name', 'New') == 'New':
+            vals['name'] = self.env['ir.sequence'].next_by_code('saas.tenant') or '/'
+        return super(SaasTenant, self).create(vals)
     subdomain = fields.Char(string='Subdomain', required=True)
     db_name = fields.Char(string='Database Name', compute='_compute_db_name', store=True, readonly=True)
     state = fields.Selection([

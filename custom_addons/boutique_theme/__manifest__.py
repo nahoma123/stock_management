@@ -26,6 +26,7 @@ Primary Theme and UI Modifications:
         # We will add XML files here later for views
         'views/web_layout.xml',
         'views/menu_items.xml',
+        'views/product_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

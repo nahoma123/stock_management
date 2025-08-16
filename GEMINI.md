@@ -4,7 +4,7 @@ This document provides a summary of the Odoo SaaS platform project to give conte
 
 ## 1. Project Overview
 
-This project is a multi-tenant Odoo SaaS platform. It uses Docker for containerization and is designed to be a flexible and scalable solution for hosting multiple Odoo instances. The platform includes a superadmin instance for managing tenants and several custom Odoo addons to provide specific functionalities.
+This project is a multi-tenant Odoo SaaS platform. It uses Docker for containerization and is designed to be a flexible and scalable solution for hosting multiple Odoo 17 instances. The platform includes a superadmin instance for managing tenants and several custom Odoo addons to provide specific functionalities.
 
 ## 2. Technologies
 
