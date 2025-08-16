@@ -7,6 +7,7 @@
     'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',
+        'data/ir_config_parameter_data.xml',
         'views/saas_tenant_views.xml',
         'views/tenant_creation_wizard_views.xml',
         'views/saas_dashboard_views.xml',

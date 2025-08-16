@@ -30,7 +30,11 @@
             <field name="arch" type="xml">
                 <form string="SaaS Tenant">
                     <header>
-                         <button name="action_create_tenant_database" string="Create Database" type="object" class="oe_highlight" invisible="[('show_create_button', '=', False)]"/>
+<button name="action_create_tenant_database"
+        string="Create Database"
+        type="object"
+        class="oe_highlight"
+        readonly="state != 'draft'"/>
                          <field name="state" widget="statusbar" statusbar_visible="draft,creating,active,error"/>
                     </header>
                     <sheet>

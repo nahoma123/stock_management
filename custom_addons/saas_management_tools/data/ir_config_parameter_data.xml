@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="saas_admin_password_config" model="ir.config_parameter">
+            <field name="key">admin_passwd</field>
+            <field name="value">admin</field>
+        </record>
+    </data>
+</odoo>

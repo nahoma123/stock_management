@@ -34,6 +34,11 @@ services:
     ports:
       - "5433:5432"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo_superadmin -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Odoo Superadmin Service
   odoo_superadmin:
@@ -42,18 +47,14 @@ services:
       dockerfile: Dockerfile.odoo
     container_name: odoo_superadmin_app
     depends_on:
-      - db_superadmin
+      db_superadmin:
+        condition: service_healthy
     ports:
       - "18070:8069"
     volumes:
       - odoo-superadmin-data:/var/lib/odoo
       - ./custom_addons:/mnt/extra-addons
       - ./superadmin.conf:/etc/odoo/odoo.conf
-    environment:
-      - HOST=db_superadmin
-      - PORT=5432
-      - USER=odoo_superadmin
-      - PASSWORD=superadmin_db_password
     restart: unless-stopped
 
   # PostgreSQL Database Service (for Tenant Template)
