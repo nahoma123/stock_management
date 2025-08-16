@@ -3,16 +3,14 @@
         <!-- Form View styled as a Dashboard -->
         <record id="view_saas_dashboard_form" model="ir.ui.view">
             <field name="name">saas.dashboard.form</field>
-            <field name="model">saas.tenant</field> <!-- Model for the view -->
+            <field name="model">ir.ui.menu</field> <!-- Use a neutral model -->
             <field name="arch" type="xml">
                 <form string="SaaS Dashboard" create="false" edit="false" delete="false">
                     <sheet>
                         <div class="oe_title">
                             <h1>SaaS Management Dashboard</h1>
                         </div>
-                        <group>
-                            <field name="dashboard_summary" nolabel="1" readonly="1"/>
-                        </group>
+                        
                         <hr/>
                         <div class="oe_button_box" name="button_box">
                             <button name="%(action_launch_tenant_creation_wizard)d" type="action"
@@ -29,14 +27,12 @@
         <!-- Action to open the SaaS Dashboard -->
         <record id="action_saas_dashboard" model="ir.actions.act_window">
             <field name="name">SaaS Dashboard</field>
-            <field name="res_model">saas.tenant</field> <!-- Base on saas.tenant to show summary -->
-            <field name="view_mode">form</field> <!-- Use a form view styled as a dashboard -->
+            <field name="res_model">ir.ui.menu</field>
+            <field name="res_id" ref="base.menu_administration"/> <!-- Point to an existing record -->
+            <field name="view_mode">form</field>
             <field name="view_id" ref="view_saas_dashboard_form"/>
-            <!-- Use context to potentially load a specific (e.g., first) record or a dummy one if needed -->
-            <!-- For simplicity, it will just open a new form view for saas.tenant, showing the computed summary -->
-            <!-- A better way is to use a dedicated model for the dashboard (e.g., transient) -->
             <field name="target">current</field>
-            <field name="usage">dashboard</field> <!-- Indicates it's a dashboard type view -->
+            <field name="usage">dashboard</field>
         </record>
 
         <!-- Menu Item for the Dashboard -->

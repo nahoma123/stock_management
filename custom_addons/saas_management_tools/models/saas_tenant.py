@@ -24,6 +24,7 @@ class SaasTenant(models.Model):
         ('active', 'Active'),
         ('error', 'Error'),
     ], string='Status', default='draft', copy=False)
+    show_create_button = fields.Boolean(compute='_compute_show_create_button')
     creation_log = fields.Text(string="Creation Log", readonly=True)
     license_expiry_date = fields.Date(string='License Expiry Date', copy=False)
     notes = fields.Text(string='Internal Notes')
@@ -181,6 +182,11 @@ class SaasTenant(models.Model):
 
         for record in self: # Assign the same summary to all records queried by the ORM for this compute
             record.dashboard_summary = summary
+
+    @api.depends('state')
+    def _compute_show_create_button(self):
+        for record in self:
+            record.show_create_button = (record.state == 'draft')
 
     def action_create_tenant_database(self):
         for tenant in self:

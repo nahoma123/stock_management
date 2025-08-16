@@ -30,14 +30,16 @@
             <field name="arch" type="xml">
                 <form string="SaaS Tenant">
                     <header>
-                         <button name="action_create_tenant_database" string="Create Database" type="object" class="oe_highlight" invisible="[('state', '!=', 'draft')]"/>
+                         <button name="action_create_tenant_database" string="Create Database" type="object" class="oe_highlight" invisible="[('show_create_button', '=', False)]"/>
                          <field name="state" widget="statusbar" statusbar_visible="draft,creating,active,error"/>
                     </header>
                     <sheet>
+                        <field name="show_create_button" invisible="1"/>
                         <group>
                             <field name="name"/>
                             <field name="subdomain"/>
                             <field name="db_name"/>
+                            <field name="state" readonly="1"/>
                             <field name="create_date" readonly="1"/>
                             <field name="license_expiry_date"/>
                         </group>
