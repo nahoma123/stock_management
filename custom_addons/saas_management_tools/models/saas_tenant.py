@@ -109,14 +109,24 @@ class SaasTenant(models.Model):
                 if process_create.returncode != 0:
                     raise Exception(f"Failed to create database via createdb. STDERR: {stderr}")
 
-                log_messages.append(f"Database {tenant.db_name} created successfully.")
-                log_messages.append(f"Initializing Odoo in database {tenant.db_name}...")
-                _logger.info(f"{tenant_name_for_logs}: Initializing Odoo...")
+                log_msg = f"Database {tenant.db_name} created successfully."
+                log_messages.append(log_msg)
+                _logger.info(f"{tenant_name_for_logs}: {log_msg}")
+
+                log_msg = f"Initializing Odoo in database {tenant.db_name}..."
+                log_messages.append(log_msg)
+                _logger.info(f"{tenant_name_for_logs}: {log_msg}")
 
                 modules_to_install = 'base,web,boutique_theme,shopping_portal'
                 init_command = ['odoo', '--database', tenant.db_name, '--db_host', db_host, '--db_port', db_port, '--db_user', db_user, '--db_password', db_password, '--init', modules_to_install, '--without-demo=all', '--stop-after-init', '--no-xmlrpc', '--logfile', '/dev/null']
                 
-                process_init = subprocess.Popen(init_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                process_init = subprocess.Popen(
+                    init_command,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
                 stdout, stderr = process_init.communicate(timeout=600)
 
                 if process_init.returncode == 0:
