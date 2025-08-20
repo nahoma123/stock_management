@@ -161,8 +161,10 @@ class SaasTenant(models.Model):
                 'state': 'creating',
                 'creation_log': 'Initiating tenant creation...'
             })
-            # The explicit commit below was removed as it is a bad practice and likely caused the issue.
-            # self.env.cr.commit()
+            # The explicit commit below is necessary here to ensure the background thread
+            # can see the changes made in the current transaction. While often an
+            # anti-pattern, it is required for this specific threading model.
+            self.env.cr.commit()
 
             # Run in a separate thread to avoid blocking the UI for too long.
             # For a robust solution, use Odoo's job queue or a dedicated job runner.
