@@ -12,19 +12,20 @@ class SaasTenant(models.Model):
 
     name = fields.Char(string='Tenant Name', required=True, copy=False, readonly=True, default='New')
 
-    @api.model
-    def create(self, vals):
-        if vals.get('name', 'New') == 'New':
-            vals['name'] = self.env['ir.sequence'].next_by_code('saas.tenant') or '/'
-        # Explicitly set show_create_button based on initial state.
-        # The 'state' field has a default of 'draft', but this handles cases
-        # where an initial state is provided during creation.
-        if vals.get('state'):
-            vals['show_create_button'] = (vals['state'] == 'draft')
-        else:
-            # If no state is provided, it will default to 'draft', so the button should be shown.
-            vals['show_create_button'] = True
-        return super(SaasTenant, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', 'New') == 'New':
+                vals['name'] = self.env['ir.sequence'].next_by_code('saas.tenant') or '/'
+            # Explicitly set show_create_button based on initial state.
+            # The 'state' field has a default of 'draft', but this handles cases
+            # where an initial state is provided during creation.
+            if vals.get('state'):
+                vals['show_create_button'] = (vals['state'] == 'draft')
+            else:
+                # If no state is provided, it will default to 'draft', so the button should be shown.
+                vals['show_create_button'] = True
+        return super(SaasTenant, self).create(vals_list)
 
     def write(self, vals):
         if 'state' in vals:
