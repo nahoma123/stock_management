@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Chatbot</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        #chat-header {
+            padding: 16px;
+            background-color: #4a90e2;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            text-align: center;
+        }
+        #chat-messages {
+            flex-grow: 1;
+            padding: 16px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+        .message {
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+        .user-message {
+            background-color: #4a90e2;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #e5e5ea;
+            color: #333;
+            align-self: flex-start;
+        }
+        .loading-indicator {
+            color: #999;
+            font-style: italic;
+        }
+        #chat-input-container {
+            display: flex;
+            padding: 16px;
+            align-items: center;
+        }
+        #chat-input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 18px;
+            padding: 10px 15px;
+            font-size: 1em;
+        }
+        #send-button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 1.5em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #cancel-button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 18px;
+            padding: 10px 15px;
+            margin-left: 10px;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-header">Chat with llama3.1:8b</div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Type your message...">
+        <button id="send-button">&#x27A4;</button>
+        <button id="cancel-button">Cancel</button>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendButton = document.getElementById('send-button');
+    const cancelButton = document.getElementById('cancel-button');
+
+    let abortController = new AbortController();
+
+    async function sendMessage() {
+        const messageText = chatInput.value.trim();
+        if (messageText === '') return;
+
+        displayMessage(messageText, 'user-message');
+        chatInput.value = '';
+        chatInput.disabled = true;
+        sendButton.disabled = true;
+        cancelButton.style.display = 'block';
+
+        const loadingIndicator = displayMessage('Bot is typing...', 'bot-message loading-indicator');
+
+        abortController = new AbortController();
+        const signal = abortController.signal;
+
+        try {
+            const response = await fetch('http://localhost:11434/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: 'llama3.1:8b',
+                    prompt: messageText,
+                    stream: false
+                }),
+                signal: signal
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            loadingIndicator.remove();
+            displayMessage(data.response, 'bot-message');
+
+        } catch (error) {
+            loadingIndicator.remove();
+            if (error.name === 'AbortError') {
+                displayMessage('Request cancelled.', 'bot-message');
+            } else {
+                console.error('Error:', error);
+                displayMessage('Sorry, I encountered an error. Make sure Ollama is running and accessible.', 'bot-message');
+            }
+        } finally {
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            cancelButton.style.display = 'none';
+        }
+    }
+
+    function displayMessage(text, classNames) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        classNames.split(' ').forEach(cls => messageElement.classList.add(cls));
+        messageElement.textContent = text;
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageElement;
+    }
+
+    function cancelRequest() {
+        abortController.abort();
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+    cancelButton.addEventListener('click', cancelRequest);
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    // Initial bot message
+    displayMessage("Hello! I'm a chatbot powered by your local Ollama model. What would you like to talk about?", "bot-message");
+</script>
+
+</body>
+</html>
