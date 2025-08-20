@@ -118,7 +118,8 @@ class SaasTenant(models.Model):
                 _logger.info(f"{tenant_name_for_logs}: {log_msg}")
 
                 modules_to_install = 'base,web,boutique_theme,shopping_portal'
-                init_command = ['odoo', '--database', tenant.db_name, '--db_host', db_host, '--db_port', db_port, '--db_user', db_user, '--db_password', db_password, '--init', modules_to_install, '--without-demo=all', '--stop-after-init', '--no-xmlrpc', '--logfile', '/dev/null']
+                log_file_path = f'/tmp/init_{tenant.db_name}.log'
+                init_command = ['odoo', '--database', tenant.db_name, '--db_host', db_host, '--db_port', db_port, '--db_user', db_user, '--db_password', db_password, '--init', modules_to_install, '--without-demo=all', '--stop-after-init', '--no-xmlrpc', '--logfile', log_file_path]
                 
                 process_init = subprocess.Popen(
                     init_command,
@@ -127,14 +128,27 @@ class SaasTenant(models.Model):
                     stderr=subprocess.PIPE,
                     text=True
                 )
-                stdout, stderr = process_init.communicate(timeout=600)
 
-                if process_init.returncode == 0:
-                    log_messages.append(f"Database initialized with modules: {modules_to_install}.")
-                    final_state = 'active'
-                else:
-                    _logger.error(f"Odoo init for {tenant.db_name} STDERR:\n{stderr}")
-                    raise Exception(f"Failed to initialize modules in {tenant.db_name}. See logs for details.")
+                try:
+                    stdout, stderr = process_init.communicate(timeout=600)
+
+                    if process_init.returncode == 0:
+                        log_messages.append(f"Database initialized with modules: {modules_to_install}.")
+                        final_state = 'active'
+                    else:
+                        log_messages.append("Odoo initialization script failed. Full log below:")
+                        try:
+                            with open(log_file_path, 'r') as f:
+                                log_messages.append(f.read())
+                        except IOError as e:
+                            log_messages.append(f"Could not read log file {log_file_path}: {e}")
+
+                        _logger.error(f"Odoo init for {tenant.db_name} failed. See tenant creation log for details.")
+                        raise Exception(f"Failed to initialize modules in {tenant.db_name}.")
+                finally:
+                    # Clean up the temporary log file
+                    if os.path.exists(log_file_path):
+                        os.remove(log_file_path)
 
         except subprocess.TimeoutExpired:
             log_msg = "Database initialization process timed out."
