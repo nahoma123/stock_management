@@ -1,9 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
+        <!-- This password is for the main admin user created in new tenant databases -->
         <record id="saas_admin_password_config" model="ir.config_parameter">
-            <field name="key">admin_passwd</field>
+            <field name="key">saas.new_tenant_admin_password</field>
             <field name="value">admin</field>
+        </record>
+
+        <!-- Connection details for the PostgreSQL server that will host the tenant databases -->
+        <record id="saas_tenant_db_host" model="ir.config_parameter">
+            <field name="key">saas.tenant_db_host</field>
+            <field name="value">db</field>
+        </record>
+        <record id="saas_tenant_db_port" model="ir.config_parameter">
+            <field name="key">saas.tenant_db_port</field>
+            <field name="value">5432</field>
+        </record>
+        <record id="saas_tenant_db_user" model="ir.config_parameter">
+            <field name="key">saas.tenant_db_user</field>
+            <field name="value">odoo</field>
+        </record>
+        <record id="saas_tenant_db_password" model="ir.config_parameter">
+            <field name="key">saas.tenant_db_password</field>
+            <field name="value">nahom_admin</field>
         </record>
     </data>
 </odoo>

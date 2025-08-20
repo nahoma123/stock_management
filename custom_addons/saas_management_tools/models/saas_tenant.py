@@ -1,5 +1,6 @@
 import subprocess
 import threading
+import os
 from odoo import models, fields, api, service, exceptions
 import logging
 
@@ -69,83 +70,83 @@ class SaasTenant(models.Model):
 
             try:
                 tenant._log_message("Starting database creation process in new thread...")
+                config_param = env['ir.config_parameter'].sudo()
 
-                # Fetch master admin password from config. This is required by Odoo's db creation service.
-                master_admin_password = service.db.exp_super_admin_passwd()
-                if not master_admin_password:
-                    raise exceptions.UserError("Master admin password (admin_passwd) is not set in Odoo configuration.")
+                # --- 1. Get Tenant DB connection details from config ---
+                db_host = config_param.get_param('saas.tenant_db_host')
+                db_port = config_param.get_param('saas.tenant_db_port')
+                db_user = config_param.get_param('saas.tenant_db_user')
+                db_password = config_param.get_param('saas.tenant_db_password')
 
-                # --- 1. Create the new database using Odoo's API ---
-                tenant._log_message(f"Attempting to create database: {tenant.db_name}")
+                if not all([db_host, db_port, db_user, db_password]):
+                    missing_params = [p for p in ['host', 'port', 'user', 'password'] if not locals().get(f'db_{p}')]
+                    raise exceptions.UserError(f"The following tenant database settings are missing from System Parameters: {', '.join(missing_params)}")
+
+                # --- 2. Create the new database using createdb command ---
+                tenant._log_message(f"Attempting to create database: {tenant.db_name} on host '{db_host}'")
+
+                env_vars = os.environ.copy()
+                env_vars['PGPASSWORD'] = db_password
+
+                create_db_command = [
+                    'createdb', '--host', db_host, '--port', db_port,
+                    '--username', db_user, '--owner', db_user, tenant.db_name
+                ]
                 
-                # Odoo's create_database function handles the low-level SQL.
-                # It requires the master password, and we can specify other params.
-                # We assume the tenant will be created with the same language as the superadmin instance.
-                lang = env.user.lang or 'en_US'
-                service.db.create_database(master_admin_password, tenant.db_name, demo=False, lang=lang)
-                
-                tenant._log_message(f"Database {tenant.db_name} created successfully via Odoo API.")
+                _logger.info(f"Executing createdb command: {' '.join(create_db_command)}")
+                process_create = subprocess.Popen(
+                    create_db_command, env=env_vars, stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE, text=True
+                )
+                stdout, stderr = process_create.communicate(timeout=60)
 
-                # --- 2. Initialize the new database with Odoo modules ---
+                if process_create.returncode != 0:
+                    error_msg = f"Failed to create database via createdb. STDERR: {stderr}"
+                    tenant._log_message(error_msg)
+                    _logger.error(f"createdb for {tenant.db_name} failed:\n{stderr}")
+                    tenant.state = 'error'
+                    return
+                
+                tenant._log_message(f"Database {tenant.db_name} created successfully.")
+
+                # --- 3. Initialize the new database with Odoo modules ---
                 tenant._log_message(f"Initializing Odoo in database {tenant.db_name}...")
                 modules_to_install = 'base,web,boutique_theme,shopping_portal'
                 
-                # We still need to call odoo-bin as a subprocess for this, as there's no
-                # high-level API to initialize a database with a specific module set.
-                
-                # Connection params for the tenant DB.
-                # These should match the running Odoo instance's configuration.
-                db_host = 'db'
-                db_port = '5432'
-                db_user = 'odoo'
-                db_password = 'nahom_admin' # This should ideally be read from config
-
                 init_command = [
-                    'odoo',  # Assumes 'odoo' is an alias for 'odoo-bin' in the container
-                    '--database', tenant.db_name,
-                    '--db_host', db_host,
-                    '--db_port', db_port,
-                    '--db_user', db_user,
-                    '--db_password', db_password,
-                    '--init', modules_to_install,
-                    '--without-demo=all',
-                    '--stop-after-init',
-                    '--no-xmlrpc',
-                    '--no-longpolling',
-                    '--logfile', '/dev/null', # Prevent log file locking issues
+                    'odoo', '--database', tenant.db_name, '--db_host', db_host,
+                    '--db_port', db_port, '--db_user', db_user, '--db_password', db_password,
+                    '--init', modules_to_install, '--without-demo=all', '--stop-after-init',
+                    '--no-xmlrpc', '--no-longpolling', '--logfile', '/dev/null',
                 ]
                 
                 _logger.info(f"Executing Odoo init command: {' '.join(init_command)}")
-                
-                # We use Popen and communicate to capture output and handle timeouts.
                 process_init = subprocess.Popen(init_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                stdout, stderr = process_init.communicate(timeout=600) # 10-minute timeout
+                stdout, stderr = process_init.communicate(timeout=600)
                 
                 _logger.info(f"Odoo init for {tenant.db_name} STDOUT:\n{stdout}")
                 if stderr:
                     _logger.error(f"Odoo init for {tenant.db_name} STDERR:\n{stderr}")
 
                 if process_init.returncode == 0:
-                    tenant._log_message(f"Database {tenant.db_name} initialized successfully with modules: {modules_to_install}.")
+                    tenant._log_message(f"Database initialized with modules: {modules_to_install}.")
                     tenant.state = 'active'
                 else:
-                    error_msg = f"Failed to initialize modules in {tenant.db_name}. " \
-                                f"Return Code: {process_init.returncode}. See logs for details."
+                    error_msg = f"Failed to initialize modules in {tenant.db_name}. See logs for details."
                     tenant._log_message(error_msg)
                     tenant.state = 'error'
 
             except subprocess.TimeoutExpired:
-                error_msg = "Database initialization process timed out after 10 minutes."
+                error_msg = "Database initialization process timed out."
                 tenant._log_message(error_msg)
                 _logger.error(error_msg, exc_info=True)
                 tenant.state = 'error'
             except Exception as e:
-                error_msg = f"An unexpected error occurred during tenant creation: {str(e)}"
+                error_msg = f"An unexpected error occurred: {str(e)}"
                 tenant._log_message(error_msg)
                 _logger.error("Tenant DB Creation/Init Unexpected Error", exc_info=True)
                 tenant.state = 'error'
             finally:
-                # Commit the state change ('active' or 'error') and logs to the database.
                 cr.commit()
 
     def action_create_tenant_database(self):
