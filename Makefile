@@ -4,7 +4,7 @@
 COMPOSE = docker compose
 
 # Targets
-.PHONY: up down logs logs-odoo logs-superadmin ps shell-odoo shell-superadmin restart build refresh update-saas-module
+.PHONY: up down logs logs-odoo logs-superadmin ps shell-odoo shell-superadmin restart build refresh update-saas-module tail-superadmin-log
 
 up:
 	@echo "Starting Odoo SaaS Platform..."
@@ -51,3 +51,7 @@ refresh: down up update-saas-module
 update-saas-module:
 	@echo "Updating saas_management_tools module..."
 	@$(COMPOSE) exec odoo_superadmin odoo -c /etc/odoo/odoo.conf -d your_superadmin_db -u saas_management_tools --stop-after-init --no-http
+
+tail-superadmin-log:
+	@echo "Tailing the Odoo superadmin log file..."
+	@$(COMPOSE) exec odoo_superadmin tail -f /var/log/odoo/odoo-superadmin.log

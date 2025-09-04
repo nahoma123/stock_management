@@ -117,9 +117,10 @@ class SaasTenant(models.Model):
                 log_messages.append(log_msg)
                 _logger.info(f"{tenant_name_for_logs}: {log_msg}")
 
-                modules_to_install = 'base,web,boutique_theme,shopping_portal'
+                modules_to_install = 'base,web,shopping_portal,test_addon'
                 log_file_path = f'/tmp/init_{tenant.db_name}.log'
-                init_command = ['odoo', '--database', tenant.db_name, '--db_host', db_host, '--db_port', db_port, '--db_user', db_user, '--db_password', db_password, '--init', modules_to_install, '--without-demo=all', '--stop-after-init', '--no-xmlrpc', '--logfile', log_file_path]
+                addons_path = '/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons'
+                init_command = ['odoo', '--config=/dev/null', '--database', tenant.db_name, '--db_host', db_host, '--db_port', db_port, '--db_user', db_user, '--db_password', db_password, '--addons-path', addons_path, '--init', modules_to_install, '--stop-after-init']
                 
                 process_init = subprocess.Popen(
                     init_command,
@@ -136,15 +137,10 @@ class SaasTenant(models.Model):
                         log_messages.append(f"Database initialized with modules: {modules_to_install}.")
                         final_state = 'active'
                     else:
-                        log_messages.append("Odoo initialization script failed. Full log below:")
-                        try:
-                            with open(log_file_path, 'r') as f:
-                                log_messages.append(f.read())
-                        except IOError as e:
-                            log_messages.append(f"Could not read log file {log_file_path}: {e}")
-
+                        log_messages.append("Odoo initialization script failed. STDERR below:")
+                        log_messages.append(stderr)
                         _logger.error(f"Odoo init for {tenant.db_name} failed. See tenant creation log for details.")
-                        raise Exception(f"Failed to initialize modules in {tenant.db_name}.")
+                        raise Exception(f"Failed to initialize modules in {tenant.db_name}.\n\n{stderr}")
                 finally:
                     # Clean up the temporary log file
                     if os.path.exists(log_file_path):
