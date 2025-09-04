@@ -117,7 +117,7 @@ class SaasTenant(models.Model):
                 log_messages.append(log_msg)
                 _logger.info(f"{tenant_name_for_logs}: {log_msg}")
 
-                modules_to_install = 'base,web,shopping_portal,test_addon'
+                modules_to_install = 'base,web,shopping_portal,test_addon,saas_management_tools'
                 log_file_path = f'/tmp/init_{tenant.db_name}.log'
                 addons_path = '/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons'
                 init_command = ['odoo', '--config=/dev/null', '--database', tenant.db_name, '--db_host', db_host, '--db_port', db_port, '--db_user', db_user, '--db_password', db_password, '--addons-path', addons_path, '--init', modules_to_install, '--stop-after-init']
