@@ -37,6 +37,7 @@ class SaasTenant(models.Model):
         ('draft', 'Draft'),
         ('creating', 'Creating'),
         ('active', 'Active'),
+        ('disabled', 'Disabled'),
         ('error', 'Error'),
     ], string='Status', default='draft', copy=False)
     show_create_button = fields.Boolean(string="Show Create Button", default=True, store=True)

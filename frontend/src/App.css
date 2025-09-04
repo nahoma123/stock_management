@@ -1,0 +1,202 @@
+/* General App Layout */
+.App {
+    font-family: sans-serif;
+    padding: 20px;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
+
+.dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Controls for Search and Filter */
+.controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.search-input, .filter-select {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+.search-input {
+    flex-grow: 1;
+}
+
+/* Tenants Table */
+.tenants-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.tenants-table th, .tenants-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.tenants-table th {
+    background-color: #f7f7f7;
+    font-weight: bold;
+}
+
+.tenants-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.tenants-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Status Indicators */
+.status {
+    padding: 5px 10px;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: bold;
+    text-transform: capitalize;
+    font-size: 0.9em;
+}
+
+.status-draft { background-color: #8c8c8c; }
+.status-creating { background-color: #1890ff; }
+.status-active { background-color: #52c41a; }
+.status-error { background-color: #f5222d; }
+.status-disabled { background-color: #faad14; }
+.status-expired { background-color: #d4380d; }
+
+/* Create Tenant Form */
+.create-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+}
+.create-form h2 {
+    margin-top: 0;
+    border-bottom: none;
+}
+.create-form .form-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+.create-form input {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+.create-form button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: none;
+    background-color: #1890ff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.create-form button:disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+}
+.create-form button:hover:not(:disabled) {
+    background-color: #40a9ff;
+}
+.error-message {
+    color: #f5222d;
+    margin-top: 10px;
+}
+
+
+/* Log Modal */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+}
+
+.log-box {
+    flex-grow: 1;
+    background-color: #222;
+    color: #eee;
+    font-family: monospace;
+    padding: 15px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.modal-content button {
+    align-self: flex-end;
+    padding: 8px 16px;
+}
+
+.actions {
+    display: flex;
+    gap: 5px;
+}
+
+.actions button {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.action-btn-disable {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.action-btn-enable {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
