@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.odoo
     container_name: odoo_app
+    command: --init base,saas_management_tools
     depends_on:
       - db
     ports:
@@ -27,11 +28,11 @@ services:
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=odoo
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     restart: unless-stopped
 
   # New Go Backend Service
@@ -39,7 +40,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend.new
-    container_name: saas_backend
+    container_name: saas_backend_v2
     depends_on:
       - db
     environment:
@@ -47,7 +48,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=odoo
       - GIN_MODE=release
     restart: unless-stopped
 
@@ -60,7 +61,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "8080:80"
     restart: unless-stopped
 
 volumes:

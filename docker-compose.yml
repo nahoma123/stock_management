@@ -12,7 +12,7 @@ services:
     volumes:
       - odoo-data:/var/lib/odoo # Persistent volume for Odoo data (filestore)
       - ./custom_addons:/mnt/extra-addons # <<< CHANGE HERE (hyphen to underscore)
-      - ./odoo.conf:/etc/odoo/odoo.conf
+      - ./odoo.conf:/etc/odoo/odoo.conf 
 
     environment:
       - HOST=db # Hostname of the database service

@@ -1,5 +1,8 @@
 # Stage 1: Build the Go application
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
+
+# Install git
+RUN apk add --no-cache git
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -7,11 +10,14 @@ WORKDIR /app
 # Copy go.mod and go.sum files
 COPY backend/go.mod backend/go.sum ./
 
-# Download all dependencies
-RUN go mod download
-
 # Copy the source code
 COPY backend/. .
+
+# Download all dependencies and tidy
+ENV GOPROXY=direct
+ENV GOSUMDB=off
+RUN go mod tidy
+RUN go mod download
 
 # Build the Go app as a static binary
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/server .
