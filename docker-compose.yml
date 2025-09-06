@@ -1,79 +1,83 @@
 services:
-  # Odoo Application Service
+  # Odoo Application Service (for tenants)
   odoo:
     build:
       context: .
       dockerfile: Dockerfile.odoo
-    container_name: odoo_app_18 # Simple container name
+    container_name: odoo_app
+    command: --init base,saas_management_tools
     depends_on:
-      - db # Make sure database starts first
+      db:
+        condition: service_healthy
     ports:
-      - "18069:8069" # Map host port 18069 to container port 8069 (access via http://localhost:18069)
+      - "18069:8069"
     volumes:
-      - odoo-data:/var/lib/odoo # Persistent volume for Odoo data (filestore)
-      - ./custom_addons:/mnt/extra-addons # <<< CHANGE HERE (hyphen to underscore)
-      - ./odoo.conf:/etc/odoo/odoo.conf 
-
+      - odoo-data:/var/lib/odoo
+      - ./custom_addons:/mnt/extra-addons
+      - ./odoo.conf:/etc/odoo/odoo.conf
     environment:
-      - HOST=db # Hostname of the database service
-      - PORT=5432 # Standard PostgreSQL port
-      - USER=odoo # Database username (matches db service)
-      - PASSWORD=nahom_admin # Database password (CHANGE THIS!)
+      - HOST=db
+      - PORT=5432
+      - USER=odoo
+      - PASSWORD=odoo
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8069/web/database/selector"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
-  # PostgreSQL Database Service for Superadmin
-  db_superadmin:
+  # PostgreSQL Database Service (used by Odoo and our new backend)
+  db:
     image: postgres:16
-    container_name: odoo_db_superadmin
+    container_name: odoo_db
     environment:
-      - POSTGRES_USER=odoo_superadmin
-      - POSTGRES_PASSWORD=superadmin_db_password
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_DB=odoo
     volumes:
-      - postgres-superadmin-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U odoo_superadmin -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -U odoo -d odoo"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Odoo Superadmin Service
-  odoo_superadmin:
+  # New Go Backend Service
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile.odoo
-    container_name: odoo_superadmin_app
+      dockerfile: Dockerfile.backend
+    container_name: saas_backend_v2
     depends_on:
-      db_superadmin:
+      db:
         condition: service_healthy
-    ports:
-      - "18070:8069"
-    volumes:
-      - odoo-superadmin-data:/var/lib/odoo
-      - ./custom_addons:/mnt/extra-addons
-      - ./superadmin.conf:/etc/odoo/odoo.conf
-    restart: unless-stopped
-
-  # PostgreSQL Database Service (for Tenant Template)
-  db:
-    image: postgres:16 # Use PostgreSQL version 16
-    container_name: odoo_db_18 # Simple container name
+      odoo:
+        condition: service_healthy
     environment:
-      # These credentials MUST match the USER and PASSWORD in the 'odoo' service environment
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
       - POSTGRES_USER=odoo
-      - POSTGRES_PASSWORD=nahom_admin # Use the SAME password as above (CHANGE THIS!)
-      - POSTGRES_DB=postgres # Default database name
-    volumes:
-      # Persistent volume for PostgreSQL data (using the default data directory path)
-      - postgres-data:/var/lib/postgresql/data
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_DB=odoo
+      - GIN_MODE=release
     restart: unless-stopped
 
-# Define named volumes managed by Docker for persistent data storage
+  # New React Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: saas_frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
 volumes:
   odoo-data:
   postgres-data:
-  postgres-superadmin-data:
-  odoo-superadmin-data:

@@ -1,45 +1,50 @@
-# Dockerfile.backend
+# Stage 1: Build the Go application
+FROM golang:1.24-alpine AS builder
 
-# Use an official Node.js runtime as a parent image
-# Choose a version compatible with your project (check package.json engines field if specified)
-FROM node:20-alpine AS base
+# Install git
+RUN apk add --no-cache git
 
-# Set the working directory in the container
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock)
-COPY package*.json ./
+# Copy go.mod and go.sum files
+COPY backend/go.mod backend/go.sum ./
 
-# Install app dependencies using npm ci for consistency
-RUN npm ci
+# Copy the source code
+COPY backend/. .
 
-# Copy necessary config files and source code
-COPY drizzle.config.ts .
-COPY tsconfig.json .
-COPY ./server ./server
-COPY ./shared ./shared
+# Download all dependencies and tidy
+ENV GOPROXY=direct
+ENV GOSUMDB=off
+RUN go mod tidy
+RUN go mod download
 
-# --- Development Stage ---
-FROM base AS development
-# Expose the port the app runs on (read from .env or hardcode if known)
-# We'll use the environment variable set in docker-compose
-EXPOSE ${BACKEND_PORT:-3000}
-# Command to run the backend development server
-# Check your package.json for the actual dev script for the server
-# Assuming a script like "dev:server" exists or you run index.ts directly
-# If using tsx or similar for direct TS execution:
-CMD ["npm", "run", "dev:server"]
-# Or if you have a build step and run JS:
-# RUN npm run build:server
-# CMD ["node", "dist/server/index.js"]
+# Build the Go app as a static binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/server .
 
-# --- Production Stage (Optional for now, but good practice) ---
-# FROM base AS production
-# ENV NODE_ENV=production
-# Copy only necessary production files from 'base' stage if needed
-# RUN npm run build:server # Assuming a build script that outputs to e.g., ./dist
-# Copy built files
-# COPY --from=base /app/dist ./dist
-# COPY --from=base /app/node_modules ./node_modules # Or RUN npm ci --only=production
-# EXPOSE ${BACKEND_PORT:-3000}
-# CMD ["node", "dist/server/index.js"] # Command to run the built server
+# Stage 2: Create the final production image with Odoo dependencies
+FROM odoo:18.0
+
+# Switch to root to install packages and set permissions
+USER root
+
+# Install postgresql-client which provides 'createdb'
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the pre-built binary from the builder stage
+COPY --from=builder /app/server .
+
+# Ensure the binary is executable
+RUN chmod +x ./server
+
+# Expose port 8080 for the Go backend
+EXPOSE 8080
+
+# Switch back to the odoo user to run the application
+USER odoo
+
+# Command to run the executable
+CMD ["./server"]
