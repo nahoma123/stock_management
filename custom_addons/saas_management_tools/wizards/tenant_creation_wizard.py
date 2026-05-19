@@ -20,8 +20,10 @@ class TenantCreationWizard(models.TransientModel):
             'subdomain': self.subdomain,
             'state': 'draft',
         })
-        # Trigger the creation process (which is currently a placeholder)
-        new_tenant.action_create_tenant_database()
+        # Note: provisioning should be handled by the central Superadmin backend API.
+        # The legacy in-Odoo automatic call has been removed to avoid duplicate
+        # provisioning flows. Administrators should use the Superadmin dashboard
+        # or API to start database creation.
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'saas.tenant',

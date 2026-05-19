@@ -30,12 +30,14 @@
             <field name="arch" type="xml">
                 <form string="SaaS Tenant">
                     <header>
-<button name="action_create_tenant_database"
-        string="Create Database"
-        type="object"
-        class="oe_highlight"
-        readonly="state != 'draft'"/>
-                         <field name="state" widget="statusbar" statusbar_visible="draft,creating,active,error"/>
+                        <!-- Deprecated: provisioning is now handled by the central Superadmin backend API.
+                         The in-Odoo Create Database button is hidden to avoid duplicate provisioning flows. -->
+                        <button name="action_create_tenant_database"
+                            string="Create Database (deprecated)"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="1"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,creating,active,error"/>
                     </header>
                     <sheet>
                         <field name="show_create_button" invisible="1"/>

@@ -8,8 +8,9 @@ This project is a multi-tenant Odoo SaaS platform. It uses Docker for containeri
 
 ## 2. Technologies
 
-*   **Backend:** Odoo (Python), likely version 17 or newer.
-*   **Frontend:** Node.js, Vite, Tailwind CSS
+*   **Odoo Backend:** Odoo (Python), version 17.
+*   **Superadmin Backend:** Go, Gin Framework, Gorilla WebSocket
+*   **Superadmin Frontend:** React, Vite
 *   **Database:** PostgreSQL
 *   **Containerization:** Docker, Docker Compose
 
@@ -19,13 +20,14 @@ This project is a multi-tenant Odoo SaaS platform. It uses Docker for containeri
     *   `boutique_theme/`: A custom theme for the Odoo backend.
     *   `saas_management_tools/`: Tools for managing SaaS tenants.
     *   `shopping_portal/`: A multi-instance shopping portal.
+*   `backend/`: Contains the Go backend for the superadmin panel.
+*   `frontend/`: Contains the React frontend for the superadmin panel.
 *   `docs/`: Project documentation.
 *   `docker-compose.yml`: Defines the Docker services for the Odoo application, database, and superadmin.
 *   `Dockerfile.odoo`: Dockerfile for the Odoo application.
-*   `Dockerfile.backend`: Dockerfile for the Node.js backend.
-*   `Dockerfile.frontend`: Dockerfile for the Node.js frontend.
+*   `Dockerfile.backend`: Dockerfile for the Go backend.
+*   `Dockerfile.frontend`: Dockerfile for the React frontend.
 *   `odoo.conf`: Configuration file for the Odoo tenant instances.
-*   `superadmin.conf`: Configuration file for the Odoo superadmin instance.
 
 ## 4. Key Files
 
@@ -35,12 +37,12 @@ This file defines the following services:
 
 *   **odoo:** The main Odoo application service for tenants.
 *   **db:** The PostgreSQL database service for the tenant template.
-*   **odoo_superadmin:** The Odoo superadmin service for managing tenants.
-*   **db_superadmin:** The PostgreSQL database for the superadmin service.
+*   **backend:** The Go backend service for the superadmin panel.
+*   **frontend:** The React frontend service for the superadmin panel.
 
-### `odoo.conf` & `superadmin.conf`
+### `odoo.conf`
 
-These are the configuration files for the Odoo tenant and superadmin instances, respectively. They specify database connection details, addons paths, and other Odoo-specific settings.
+This is the configuration file for the Odoo tenant instances. It specifies database connection details, addons paths, and other Odoo-specific settings.
 
 ### `__manifest__.py` Files
 
@@ -103,6 +105,15 @@ my_module/
 *   **Odoo Caching:** When making changes to `__manifest__.py` or other non-Python files, a simple browser refresh is not enough. You must either use the "Update Apps List" feature or, more reliably, restart the Odoo server container to ensure changes are loaded.
 
 ## 9. Recent Activity Log (What happened last time?)
+
+*   **When:** September 15, 2025
+*   **What:** Updated the project documentation to reflect the new superadmin architecture.
+*   **Why:** The previous documentation was outdated and referred to the old Odoo-based superadmin.
+*   **How:**
+    1.  Updated the "Technologies" section to include the new Go backend and React frontend.
+    2.  Updated the "Directory Structure" section to include the new `backend` and `frontend` directories.
+    3.  Updated the "Key Files" section to reflect the new `docker-compose.yml` services.
+    4.  Added a new entry to the "Recent Activity Log" to summarize the architectural changes.
 
 *   **When:** August 15, 2025
 *   **What:** Successfully debugged and installed the `saas_management_tools` custom Odoo module.

@@ -51,12 +51,12 @@ The dashboard is the default view when you click on the "SaaS Management" menu.
 3.  **Provisioning Process:**
     *   After clicking "Create Tenant" in the wizard, a new `saas.tenant` record is created in the "Draft" state.
     *   You will be redirected to the form view of this new tenant record.
-    *   To initiate the actual database creation and Odoo initialization, click the **"Create Database"** button (visible when the tenant is in "Draft" state).
+    *   To initiate the actual database creation and Odoo initialization, use the Superadmin web UI (the `Create Tenant` action on the dashboard) which calls the central provisioning API. The legacy in-Odoo **"Create Database"** button is deprecated and hidden to avoid duplicate provisioning flows.
     *   The tenant's state will change:
         *   `Draft` -> `Creating`: The system is now attempting to create the PostgreSQL database and initialize it with the base Odoo modules. This is a background task.
         *   `Creating` -> `Active`: If the process completes successfully.
         *   `Creating` -> `Error`: If any step in the provisioning fails.
-    *   You can monitor the progress via the `creation_log` field on the tenant's form view and the `odoo_superadmin` container logs.
+    *   You can monitor the progress via the `creation_log` field on the tenant's form view and the superadmin service logs / websocket output from the Superadmin UI.
     *   **Remember:** For the new tenant to be accessible via its subdomain in a local development environment, you must add an entry to your `/etc/hosts` file (e.g., `127.0.0.1 greenvalley.localhost`). In production, DNS (wildcard A record) should handle this.
 
 ### 5.4.2 Viewing Tenant List

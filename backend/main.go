@@ -90,6 +90,7 @@ func main() {
 		api.POST("/tenants/:id/disable", disableTenant)
 		api.POST("/tenants/:id/enable", enableTenant)
 		api.PUT("/tenants/:id/expiry", setTenantExpiry)
+		api.DELETE("/tenants/:id", deleteTenant)
 	}
 
 	if err := r.Run(":8080"); err != nil {
@@ -118,6 +119,42 @@ func disableTenant(c *gin.Context) {
 func enableTenant(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	updateTenantState(id, "active")
+	c.Status(http.StatusOK)
+}
+
+func deleteTenant(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant ID"})
+		return
+	}
+
+	tenant, err := getTenantByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	// Drop the database
+	dropDbSQL := fmt.Sprintf("DROP DATABASE IF EXISTS \"%s\"", tenant.DbName)
+	if err := db.Exec(dropDbSQL).Error; err != nil {
+		log.Printf("Error dropping database for tenant %d: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to drop tenant database"})
+		return
+	}
+
+	// Delete the tenant record
+	if err := db.Delete(&tenant).Error; err != nil {
+		log.Printf("Error deleting tenant %d record: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete tenant record"})
+		return
+	}
+
+	msg := WebSocketMessage{Type: "tenant_deleted", Payload: gin.H{"id": id}}
+	if jsonMsg, err := json.Marshal(msg); err == nil {
+		hub.broadcast <- jsonMsg
+	}
+
 	c.Status(http.StatusOK)
 }
 
@@ -186,9 +223,9 @@ func createTenantInBackground(tenant Tenant) {
 	dbUser := getEnv("POSTGRES_USER", "odoo")
 	dbPassword := getEnv("POSTGRES_PASSWORD", "odoo")
 	updateLogAndBroadcast(tenant.ID, fmt.Sprintf("Attempting to create database '%s'...\n", tenant.DbName))
-	cmdCreate := exec.Command("createdb", "--host", dbHost, "--port", dbPort, "--username", dbUser, "--owner", dbUser, tenant.DbName)
-	cmdCreate.Env = append(os.Environ(), "PGPASSWORD="+dbPassword)
-	if err := runCommandAndLog(cmdCreate, tenant.ID); err != nil {
+	
+	createDbSQL := fmt.Sprintf("CREATE DATABASE \"%s\" OWNER \"%s\"", tenant.DbName, dbUser)
+	if err := db.Exec(createDbSQL).Error; err != nil {
 		updateLogAndBroadcast(tenant.ID, fmt.Sprintf("ERROR: Failed to create database: %v\n", err))
 		updateTenantState(tenant.ID, "error")
 		return

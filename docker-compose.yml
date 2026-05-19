@@ -5,7 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile.odoo
     container_name: odoo_app
-    command: --init base,saas_management_tools
     depends_on:
       db:
         condition: service_healthy
@@ -16,16 +15,16 @@ services:
       - ./custom_addons:/mnt/extra-addons
       - ./odoo.conf:/etc/odoo/odoo.conf
     environment:
-      - HOST=db
-      - PORT=5432
-      - USER=odoo
-      - PASSWORD=odoo
+      - DB_ARGS=postgres://odoo:odoo@db:5432/odoo
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8069/web/database/selector"]
       interval: 10s
       timeout: 5s
       retries: 12
+    command: bash -c "odoo -d odoo -r odoo -w odoo --db_host=db --db_port=5432 --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons --init base,saas_management_tools --stop-after-init && odoo -r odoo -w odoo --db_host=db --db_port=5432 --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons"
+    
+    
 
   # PostgreSQL Database Service (used by Odoo and our new backend)
   db:
@@ -64,6 +63,9 @@ services:
       - POSTGRES_PASSWORD=odoo
       - POSTGRES_DB=odoo
       - GIN_MODE=release
+    volumes:
+      - ./custom_addons:/mnt/extra-addons
+      - ./odoo.conf:/etc/odoo/odoo.conf
     restart: unless-stopped
 
   # New React Frontend Service
