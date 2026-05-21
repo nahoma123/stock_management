@@ -123,3 +123,5 @@ my_module/
     2.  Fixed a deprecated `attrs` attribute in the form view.
     3.  Fixed multiple "External ID not found" and `FileNotFoundError` errors by correcting the file loading order and file paths in `__manifest__.py`.
     4.  Finally diagnosed the root `ValueError` as being caused by the `tree` view tag, which was corrected to `list`.
+10. about tasks
+    - ensure that every task is documented and status updated under docs/tasks.md, create the file if doesn't exist

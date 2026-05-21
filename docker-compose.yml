@@ -1,32 +1,5 @@
 services:
-  # Odoo Application Service (for tenants)
-  odoo:
-    build:
-      context: .
-      dockerfile: Dockerfile.odoo
-    container_name: odoo_app
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "18069:8069"
-    volumes:
-      - odoo-data:/var/lib/odoo
-      - ./custom_addons:/mnt/extra-addons
-      - ./odoo.conf:/etc/odoo/odoo.conf
-    environment:
-      - DB_ARGS=postgres://odoo:odoo@db:5432/odoo
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8069/web/database/selector"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-    command: bash -c "odoo -d odoo -r odoo -w odoo --db_host=db --db_port=5432 --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons --init base,saas_management_tools --stop-after-init && odoo -r odoo -w odoo --db_host=db --db_port=5432 --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons"
-    
-    
-
-  # PostgreSQL Database Service (used by Odoo and our new backend)
+  # PostgreSQL Database Service (used by Odoo and our backend)
   db:
     image: postgres:16
     container_name: odoo_db
@@ -39,13 +12,15 @@ services:
     ports:
       - "5433:5432"
     restart: unless-stopped
+    networks:
+      - saas_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U odoo -d odoo"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # New Go Backend Service
+  # Go Backend Service
   backend:
     build:
       context: .
@@ -54,8 +29,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      odoo:
-        condition: service_healthy
     environment:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
@@ -63,12 +36,18 @@ services:
       - POSTGRES_PASSWORD=odoo
       - POSTGRES_DB=odoo
       - GIN_MODE=release
+      - HOST_PROJECT_PATH=/home/nahom/Desktop/project/odoo_project
+      - DOCKER_NETWORK=saas_net
     volumes:
       - ./custom_addons:/mnt/extra-addons
       - ./odoo.conf:/etc/odoo/odoo.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./tenants:/app/tenants
     restart: unless-stopped
+    networks:
+      - saas_net
 
-  # New React Frontend Service
+  # React Frontend Service
   frontend:
     build:
       context: .
@@ -76,10 +55,34 @@ services:
     container_name: saas_frontend
     depends_on:
       - backend
-    ports:
-      - "8080:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`superadmin.localhost`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
     restart: unless-stopped
+    networks:
+      - saas_net
+    
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:8090"
+    ports:
+      - "8090:8090"
+      - "8091:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - saas_net
+
+networks:
+  saas_net:
+    name: saas_net
+    driver: bridge
 
 volumes:
-  odoo-data:
   postgres-data:

@@ -202,6 +202,7 @@ const TenantDashboard = () => {
                         <th>Name</th>
                         <th>Subdomain</th>
                         <th>Status</th>
+                        <th>API Key</th>
                         <th>Expiry Date</th>
                         <th>Actions</th>
                     </tr>
@@ -212,6 +213,13 @@ const TenantDashboard = () => {
                             <td>{tenant.name}</td>
                             <td>{tenant.subdomain}</td>
                             <td><span className={`status status-${tenant.state}`}>{tenant.state}</span></td>
+                            <td className="api-key-cell">
+                                {tenant.api_key ? (
+                                    <span className="api-key" onClick={() => navigator.clipboard.writeText(tenant.api_key)} title="Click to copy">
+                                        {tenant.api_key.substring(0, 15)}...
+                                    </span>
+                                ) : 'N/A'}
+                            </td>
                             <td>{tenant.license_expiry_date ? tenant.license_expiry_date.split('T')[0] : 'N/A'}</td>
                             <td className="actions">
                                 {tenant.state === 'creating' && <button onClick={() => setModal({type: 'log', tenant})}>View Log</button>}
