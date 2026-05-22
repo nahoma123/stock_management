@@ -25,7 +25,7 @@
 
 ## Project Cleanup & Refactoring
 - [x] Document task in docs/tasks.md
-- [ ] Remove Dead Code & Artifacts
-- [ ] Clean up Orphaned Docker Containers
-- [ ] Modularize Go Backend
-- [ ] Verify functionality
+- [x] Remove Dead Code & Artifacts
+- [x] Clean up Orphaned Docker Containers
+- [x] Modularize Go Backend
+- [x] Verify functionality
