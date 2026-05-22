@@ -22,3 +22,10 @@
 - [x] Enhance backend/main.go (Yesterday stats & 7-Day Trend)
 - [x] Update docs/mobile_api.md
 - [x] Verify functionality
+
+## Project Cleanup & Refactoring
+- [x] Document task in docs/tasks.md
+- [ ] Remove Dead Code & Artifacts
+- [ ] Clean up Orphaned Docker Containers
+- [ ] Modularize Go Backend
+- [ ] Verify functionality

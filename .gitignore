@@ -1,3 +1,11 @@
 .env
 CREDENTIALS.md
 frontend/node_modules/
+
+# Go Backend local binaries and logs
+backend/backend.log
+backend/backend_bin
+backend/saas-superadmin-backend
+
+# IDE configs
+.idea/
