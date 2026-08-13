@@ -52,7 +52,7 @@ func DisableTenant(c *gin.Context) {
 
 func EnableTenant(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	tenant, err := services.GetTenantByID(id)
+	_, err := services.GetTenantByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
 		return
@@ -61,10 +61,6 @@ func EnableTenant(c *gin.Context) {
 	containerName := fmt.Sprintf("odoo_tenant_%d", id)
 
 	services.UpdateLogAndBroadcast(id, "Enabling tenant container...\n")
-
-	if err := services.EnsureDummyModuleExists(tenant.Subdomain); err != nil {
-		log.Printf("Error ensuring dummy module exists: %v", err)
-	}
 
 	_, status, err := services.CallDockerAPI("POST", fmt.Sprintf("/containers/%s/start", containerName), nil)
 	if err != nil || status >= 400 {
@@ -228,8 +224,9 @@ func createTenantInBackground(tenant models.Tenant) {
 	services.UpdateLogAndBroadcast(tenant.ID, "Database created successfully.\n")
 
 	services.UpdateLogAndBroadcast(tenant.ID, "Preparing isolated custom addons directory...\n")
-	if err := services.EnsureDummyModuleExists(tenant.Subdomain); err != nil {
-		services.UpdateLogAndBroadcast(tenant.ID, fmt.Sprintf("ERROR: Failed to create tenant directories or dummy module: %v\n", err))
+	customAddonsPath := filepath.Join("/app/tenants", tenant.Subdomain, "custom_addons")
+	if err := os.MkdirAll(customAddonsPath, 0755); err != nil {
+		services.UpdateLogAndBroadcast(tenant.ID, fmt.Sprintf("ERROR: Failed to create tenant addon directory: %v\n", err))
 		services.UpdateTenantState(tenant.ID, "error")
 		return
 	}

@@ -89,7 +89,7 @@ Here's a brief recap of how typical theme customizations are implemented within 
 
 *   **For All Tenants (Production Rollout):**
     1.  Once theme changes are tested and stable, the updated `boutique_theme` code (as part of the shared `custom_addons` directory) needs to be deployed to the production server (e.g., via `git pull`).
-    2.  The Docker containers for `odoo` and `odoo_superadmin` need to be rebuilt and restarted to use the new code:
+    2.  Rebuild the Odoo image and replace affected tenant containers to use the new code:
         ```bash
         docker-compose build
         docker-compose up -d # This will recreate containers using the new image
@@ -110,7 +110,7 @@ Examples include:
 
 ### 6.3.2 How it Works
 1.  **Module Development:** Custom modules are developed and placed in the `custom_addons/` directory.
-2.  **Provisioning Configuration:** The `saas_management_tools` module (specifically in the `_create_and_initialize_tenant_db` method within `saas_tenant.py`) defines which modules are installed by default for new tenants (e.g., `modules_to_install = 'base,web,boutique_theme,shopping_portal'`).
+2.  **Provisioning Configuration:** The initialization command in `backend/services/docker.go` defines the platform modules installed for every new tenant. Tenant-owned modules use the customization release workflow.
 
 ### 6.3.3 Modifying Existing Custom Modules (for Developers)
 If you need to add a new feature or fix a bug in a module like `shopping_portal`:

@@ -64,7 +64,7 @@ func TestValidateCustomizationArchiveRejectsUnsafeContent(t *testing.T) {
 }
 
 func TestDeployCustomizationRejectsUnsafeTenantPath(t *testing.T) {
-	_, err := DeployCustomizationArchive("../other-tenant", []byte("not-a-zip"))
+	_, err := StageCustomizationRelease("../other-tenant", 1, []byte("not-a-zip"))
 	if err == nil || !strings.Contains(err.Error(), "unsafe subdomain") {
 		t.Fatalf("expected unsafe subdomain error, got %v", err)
 	}
@@ -114,34 +114,20 @@ func TestCustomizationReleaseActivationAndRestore(t *testing.T) {
 	}
 }
 
-func TestCustomizationReleasePreservesLegacyModule(t *testing.T) {
+func TestCustomizationReleaseRejectsUnmanagedActiveModule(t *testing.T) {
 	t.Setenv("TENANT_DATA_ROOT", t.TempDir())
-	root := tenantCustomizationRoot("legacy-tenant")
-	legacyModule := filepath.Join(root, "customer_stock")
-	if err := os.MkdirAll(legacyModule, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(legacyModule, "__manifest__.py"), []byte("{'name': 'Legacy'}\n"), 0644); err != nil {
+	root := tenantCustomizationRoot("new-tenant")
+	activeModule := filepath.Join(root, "customer_stock")
+	if err := os.MkdirAll(activeModule, 0755); err != nil {
 		t.Fatal(err)
 	}
 	data := customizationZIP(t, map[string]string{
 		"customer_stock/__manifest__.py": "{'name': 'Release'}\n",
 	})
-	if _, err := StageCustomizationRelease("legacy-tenant", 1, data); err != nil {
+	if _, err := StageCustomizationRelease("new-tenant", 1, data); err != nil {
 		t.Fatal(err)
 	}
-	activation, err := ActivateCustomizationRelease("legacy-tenant", "customer_stock", 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if filepath.IsAbs(activation.PreviousPath) {
-		t.Fatalf("legacy fallback must be portable, got %q", activation.PreviousPath)
-	}
-	if err := RestoreCustomizationActivation("legacy-tenant", activation); err != nil {
-		t.Fatal(err)
-	}
-	manifest, err := os.ReadFile(filepath.Join(legacyModule, "__manifest__.py"))
-	if err != nil || !strings.Contains(string(manifest), "Legacy") {
-		t.Fatalf("legacy module was not restored: %s (%v)", manifest, err)
+	if _, err := ActivateCustomizationRelease("new-tenant", "customer_stock", 1); err == nil || !strings.Contains(err.Error(), "not managed") {
+		t.Fatalf("expected unmanaged module error, got %v", err)
 	}
 }

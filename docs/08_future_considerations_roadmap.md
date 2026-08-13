@@ -13,7 +13,7 @@ This document has detailed the current state and operational procedures for the 
 *   **Tenant Self-Service Portal:**
     *   Develop a portal (potentially a separate Odoo module or web application) where tenants can manage their account, view license status, update basic contact information, and submit support requests.
 *   **Super Admin Lifecycle Tools:**
-    *   **Suspend/Reactivate:** Implement functionality in the `saas_management_tools` for super admins to gracefully suspend a tenant's access (e.g., for non-payment) and reactivate them. This would involve more than just a state change; it might require interaction with the reverse proxy or Odoo instance itself.
+    *   **Suspend/Reactivate:** Extend the Go control plane to gracefully suspend tenant access (for example, for non-payment) and reactivate it.
     *   **Secure Deletion:** Develop a robust and secure process for deleting tenants. This should include options for data archival before deletion, thorough database cleanup, and filestore removal.
 
 ## 8.3 Advanced Licensing and Subscription Management

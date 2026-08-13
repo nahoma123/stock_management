@@ -30,7 +30,6 @@ func main() {
 		api.PUT("/tenants/:id/expiry", handlers.SetTenantExpiry)
 		api.DELETE("/tenants/:id", handlers.DeleteTenant)
 		api.GET("/tenants/:id/monitoring", handlers.GetTenantMonitoring)
-		api.POST("/tenants/:id/monitoring/enroll", handlers.EnrollTenantMonitoring)
 		api.GET("/tenants/:id/audit", handlers.GetTenantAudit)
 		api.GET("/tenants/:id/customizations/releases", handlers.GetCustomizationReleases)
 		api.POST("/tenants/:id/customizations/validate", handlers.ValidateTenantCustomization)

@@ -86,41 +86,6 @@ func CallDockerAPI(method, path string, payload interface{}) ([]byte, int, error
 	return respBody, resp.StatusCode, err
 }
 
-func EnsureDummyModuleExists(subdomain string) error {
-	tenantPath := filepath.Join("/app/tenants", subdomain, "custom_addons")
-	if err := os.MkdirAll(tenantPath, 0755); err != nil {
-		return err
-	}
-
-	dummyModulePath := filepath.Join(tenantPath, "dummy_module")
-	if err := os.MkdirAll(dummyModulePath, 0755); err != nil {
-		return err
-	}
-
-	initPyPath := filepath.Join(dummyModulePath, "__init__.py")
-	if _, err := os.Stat(initPyPath); os.IsNotExist(err) {
-		if err := os.WriteFile(initPyPath, []byte(""), 0644); err != nil {
-			return err
-		}
-	}
-
-	manifestPyPath := filepath.Join(dummyModulePath, "__manifest__.py")
-	if _, err := os.Stat(manifestPyPath); os.IsNotExist(err) {
-		manifestContent := `{
-    'name': 'Dummy Module',
-    'version': '1.0',
-    'category': 'Hidden',
-    'summary': 'Dummy module for path validation',
-    'depends': ['base'],
-    'installable': True,
-}`
-		if err := os.WriteFile(manifestPyPath, []byte(manifestContent), 0644); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func DockerCreateAndStartInitContainer(tenant models.Tenant, dbHost, dbPort, dbUser, dbPassword string, hostVolumePath string) error {
 	dockerNetwork := GetEnv("DOCKER_NETWORK", "saas_net")
 	containerName := fmt.Sprintf("odoo_init_%d", tenant.ID)

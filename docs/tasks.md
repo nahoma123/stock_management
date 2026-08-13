@@ -52,5 +52,4 @@
 - [x] Add isolated customization package validation and deployment
 - [x] Add superadmin monitoring and customization controls
 - [x] Add versioned staging, automated module maintenance, and rollback releases
-- [x] Add protected monitoring enrollment for existing tenants
 - [x] Add central release and operator audit records

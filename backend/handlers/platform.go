@@ -187,43 +187,6 @@ func recoverCustomizationActivation(tenant models.Tenant, activation services.Re
 	_ = restartTenantContainer(tenant)
 }
 
-func EnrollTenantMonitoring(c *gin.Context) {
-	if !authorizeCustomization(c) {
-		return
-	}
-	tenant, ok := tenantFromParam(c)
-	if !ok {
-		return
-	}
-	if tenant.AgentToken == "" {
-		token, err := randomToken("agent_")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate agent credential"})
-			return
-		}
-		tenant.AgentToken = token
-		if err := database.DB.Model(&tenant).Update("agent_token", token).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save agent credential"})
-			return
-		}
-	}
-	err := services.DockerStopTenant(tenant.ID)
-	if err == nil {
-		err = services.DockerRunModuleMaintenance(tenant, "tenant_management_agent")
-	}
-	if err == nil {
-		err = restartTenantContainer(tenant)
-	}
-	if err != nil {
-		services.RecordAudit(tenant.ID, "monitoring.enroll", "tenant_management_agent", "failed", err.Error())
-		_ = restartTenantContainer(tenant)
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
-		return
-	}
-	services.RecordAudit(tenant.ID, "monitoring.enroll", "tenant_management_agent", "success", "agent enrolled")
-	c.JSON(http.StatusOK, gin.H{"message": "Tenant monitoring enrolled"})
-}
-
 func GetTenantAudit(c *gin.Context) {
 	tenant, ok := tenantFromParam(c)
 	if !ok {

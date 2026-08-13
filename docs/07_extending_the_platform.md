@@ -34,25 +34,19 @@ Developing a new Odoo module typically involves:
 ### 7.3.2 Integrating with SaaS Provisioning
 To ensure a new custom module is automatically installed for all newly created tenants:
 1.  Identify the technical name of your new module (e.g., `my_new_module`).
-2.  Edit the `saas_management_tools/models/saas_tenant.py` file.
-3.  Locate the `_create_and_initialize_tenant_db` method.
-4.  Add your module's technical name to the `modules_to_install` string or list. For example:
-    ```python
-    # Inside _create_and_initialize_tenant_db method
-    # modules_to_install = 'base,web,boutique_theme,shopping_portal'
-    modules_to_install = 'base,web,boutique_theme,shopping_portal,my_new_module'
-    ```
-5.  Deploy this change to your superadmin Odoo instance. Subsequent tenant provisioning will include this new module.
+2.  Add platform-wide modules to the initialization command in `backend/services/docker.go`.
+3.  Rebuild the backend and Odoo images. Subsequent tenant provisioning will include the module.
+4.  For tenant-owned modules, upload and activate the package through the customization release workflow.
 
 ### 7.3.3 Rolling Out to Existing Tenants
 Once a new module is developed and added to the codebase:
 *   **Code Deployment:** Deploy the updated `custom_addons` directory to the server.
-*   **Restart Services:** Restart the Odoo Docker containers (`docker-compose up -d --no-deps odoo odoo_superadmin` - the `--no-deps` is optional but can speed up if only app servers are changed).
+*   **Restart Services:** Rebuild the Odoo image and replace affected tenant containers through the control plane.
 *   **Making Module Available to Existing Tenants:**
     *   **Option 1 (Manual by Tenant Admin or Super Admin):**
         An administrator can log into each existing tenant's Odoo instance, go to the "Apps" menu, search for the new module, and click "Install."
-    *   **Option 2 (Super Admin Initiated Batch Install - Future Feature):**
-        A more advanced approach (not yet implemented) would be to develop a utility within the `saas_management_tools` module. This utility could:
+    *   **Option 2 (Control-plane batch install - Future Feature):**
+        A future Go control-plane operation could:
         *   List all active tenants.
         *   Allow the super admin to select a new module to be installed.
         *   Iterate through the selected tenant databases and programmatically trigger the installation of the new module. This would require careful error handling and potentially background job processing.
@@ -103,7 +97,7 @@ Odoo releases regular updates. For a specific major version (e.g., 18.0), these 
     *   Alternatively, if you're using a floating tag like `odoo:18.0`, you can explicitly pull the latest version of that tag: `docker pull odoo:18.0`.
 2.  **Rebuild Custom Odoo Image:**
     ```bash
-    docker-compose build odoo odoo_superadmin
+    docker compose build odoo backend
     ```
 3.  **Restart Services:**
     ```bash
@@ -119,7 +113,7 @@ When you develop new versions of your custom modules in `custom_addons/`:
     *   On the server, pull the latest code: `git pull`.
 2.  **Restart Odoo Services:**
     ```bash
-    docker-compose up -d --no-deps odoo odoo_superadmin
+    docker compose up -d backend
     ```
     This ensures Odoo's Python interpreter picks up any code changes.
 3.  **Upgrade Modules in Odoo Instances:**

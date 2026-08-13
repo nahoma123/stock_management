@@ -24,20 +24,19 @@ The development of this Stock Management SaaS adheres to fundamental SaaS princi
 
 The system employs a tiered architecture, containerized using Docker for deployment and scalability:
 
-1.  **Super Admin Instance:**
-    *   **Odoo Super Admin Service (`odoo_superadmin`):** An Odoo instance dedicated to administrative functions. This is where the `saas_management_tools` module resides, allowing administrators to create and manage tenants.
-    *   **Super Admin Database (`db_superadmin`):** A PostgreSQL database exclusively for the `odoo_superadmin` service. It stores information about tenants (metadata, state, configuration) but not the tenants' actual business data.
-    *   **Configuration:** Uses `superadmin.conf` for its Odoo settings.
+1.  **Super Admin Control Plane:**
+    *   **React frontend:** Provides tenant creation, lifecycle, monitoring, and customization controls.
+    *   **Go backend:** Stores tenant metadata and performs provisioning through PostgreSQL and Docker APIs.
 
 2.  **Tenant Instances (Template & Actual):**
     *   **Odoo Tenant Service (`odoo`):** The primary Odoo application server that will handle requests for all active tenant instances. It uses `dbfilter_format = %d_db` in its `odoo.conf` to dynamically select the correct tenant database based on the request's subdomain.
     *   **Tenant Databases (`db` - PostgreSQL Service):** A PostgreSQL service that hosts the individual databases for each tenant (e.g., `tenant1_db`, `tenant2_db`). Each tenant's data is isolated within its own database.
-        *   New tenant databases are created on this PostgreSQL service by the `saas_management_tools` module running in the `odoo_superadmin` instance.
+        *   New tenant databases are created by the central Go provisioning API.
     *   **Configuration:** The `odoo` service uses `odoo.conf` which is configured to serve as a template and routing mechanism for tenant databases.
 
 3.  **Docker & Containerization:**
     *   **`docker-compose.yml`:** Defines and manages all services (Odoo instances, PostgreSQL databases), their configurations, volumes, ports, and networks.
-    *   **`Dockerfile.odoo`:** A custom Dockerfile that builds upon the official `odoo:18.0` image to include necessary dependencies like `postgresql-client` (used by the superadmin for creating tenant databases). Both `odoo` and `odoo_superadmin` services use the image built from this Dockerfile.
+    *   **`Dockerfile.odoo`:** Builds the Odoo 18 image used by tenant initialization, maintenance, and daemon containers.
     *   **Volumes:** Persistent storage for Odoo application data (filestores) and PostgreSQL databases is managed using Docker named volumes (e.g., `odoo-data`, `postgres-data`, `odoo-superadmin-data`, `postgres-superadmin-data`).
 
 4.  **Web Server/Reverse Proxy (Conceptual - Not yet implemented):**

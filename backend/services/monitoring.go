@@ -42,7 +42,7 @@ func FetchTenantMonitoring(tenant models.Tenant) (TenantMonitoring, error) {
 		return TenantMonitoring{}, err
 	}
 	if tenant.AgentToken == "" {
-		return TenantMonitoring{}, fmt.Errorf("tenant has not been enrolled with a management agent token")
+		return TenantMonitoring{}, fmt.Errorf("tenant provisioning is incomplete: management agent token is missing")
 	}
 	req.Header.Set("X-Tenant-Agent-Token", tenant.AgentToken)
 

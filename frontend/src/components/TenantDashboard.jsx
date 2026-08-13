@@ -89,7 +89,6 @@ const ExpiryModal = ({ tenant, onClose, onExpirySet }) => {
 const MonitoringModal = ({ tenant, onClose }) => {
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
-	const [enrolling, setEnrolling] = useState(false);
 
     useEffect(() => {
         fetch(`/api/tenants/${tenant.id}/monitoring`)
@@ -101,33 +100,11 @@ const MonitoringModal = ({ tenant, onClose }) => {
             .catch(err => setError(err.message));
     }, [tenant.id]);
 
-    const enroll = async () => {
-        const token = sessionStorage.getItem('customizationAdminToken') || window.prompt('Customization administrator token');
-        if (!token) return;
-        sessionStorage.setItem('customizationAdminToken', token);
-        setEnrolling(true);
-        setError('');
-        try {
-            const response = await fetch(`/api/tenants/${tenant.id}/monitoring/enroll`, {
-                method: 'POST',
-                headers: { 'X-Customization-Admin-Token': token },
-            });
-            const body = await response.json();
-            if (!response.ok) throw new Error(body.error || 'Enrollment failed.');
-            window.location.reload();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setEnrolling(false);
-        }
-    };
-
     return (
         <div className="modal-backdrop" onClick={onClose}>
             <div className="modal-content" onClick={event => event.stopPropagation()}>
                 <h2>{tenant.name} Monitoring</h2>
                 {error && <p className="error-message">{error}</p>}
-				{error && <button onClick={enroll} disabled={enrolling}>{enrolling ? 'Enrolling...' : 'Enroll monitoring'}</button>}
                 {!data && !error && <p>Checking tenant agent...</p>}
                 {data && <>
                     <div className="metric-grid">

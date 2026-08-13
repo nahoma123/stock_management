@@ -121,10 +121,6 @@ func ValidateCustomizationArchive(data []byte) (CustomizationReport, error) {
 	return CustomizationReport{Module: moduleName, Files: len(reader.File), Size: totalSize, Warnings: warnings}, nil
 }
 
-func DeployCustomizationArchive(tenantSubdomain string, data []byte) (CustomizationReport, error) {
-	return StageCustomizationRelease(tenantSubdomain, 0, data)
-}
-
 func StageCustomizationRelease(tenantSubdomain string, releaseID int, data []byte) (CustomizationReport, error) {
 	if !tenantPathPattern.MatchString(tenantSubdomain) {
 		return CustomizationReport{}, fmt.Errorf("tenant has an unsafe subdomain")
@@ -173,11 +169,7 @@ func StageCustomizationRelease(tenantSubdomain string, releaseID int, data []byt
 	}
 
 	sourceModule := filepath.Join(tempRoot, report.Module)
-	releaseName := strconv.Itoa(releaseID)
-	if releaseID == 0 {
-		releaseName = "manual"
-	}
-	targetModule := filepath.Join(root, ".releases", report.Module, releaseName)
+	targetModule := filepath.Join(root, ".releases", report.Module, strconv.Itoa(releaseID))
 	if err := os.MkdirAll(filepath.Dir(targetModule), 0755); err != nil {
 		return CustomizationReport{}, err
 	}
@@ -202,15 +194,7 @@ func ActivateCustomizationRelease(tenantSubdomain, moduleName string, releaseID 
 	if target, err := os.Readlink(activePath); err == nil {
 		previousPath = target
 	} else if _, statErr := os.Stat(activePath); statErr == nil {
-		legacyPath := filepath.Join(root, ".releases", moduleName, "legacy")
-		os.RemoveAll(legacyPath)
-		if err := os.Rename(activePath, legacyPath); err != nil {
-			return ReleaseActivation{}, err
-		}
-		previousPath, err = filepath.Rel(root, legacyPath)
-		if err != nil {
-			return ReleaseActivation{}, err
-		}
+		return ReleaseActivation{}, fmt.Errorf("active module %q is not managed by the release system", moduleName)
 	}
 	temporaryLink := activePath + ".next"
 	os.Remove(temporaryLink)
