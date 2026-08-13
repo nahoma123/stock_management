@@ -1,0 +1,4 @@
+interface:
+  display_name: "Odoo 19 Development"
+  short_description: "Build and review Odoo 19 modules correctly"
+  default_prompt: "Use $odoo-19 to implement this Odoo 19 change using the correct framework patterns."
