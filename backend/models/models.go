@@ -9,6 +9,7 @@ type Tenant struct {
 	DbName                string     `json:"db_name" gorm:"column:db_name;unique"`
 	State                 string     `json:"state"`
 	ApiKey                string     `json:"api_key" gorm:"column:api_key"`
+	AgentToken            string     `json:"-" gorm:"column:agent_token"`
 	CreationLog           *string    `json:"creation_log"`
 	LicenseExpiryDate     *time.Time `json:"license_expiry_date"`
 	MinNotificationAmount float64    `json:"min_notification_amount"`

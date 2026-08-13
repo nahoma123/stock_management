@@ -86,6 +86,109 @@ const ExpiryModal = ({ tenant, onClose, onExpirySet }) => {
     );
 };
 
+const MonitoringModal = ({ tenant, onClose }) => {
+    const [data, setData] = useState(null);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        fetch(`/api/tenants/${tenant.id}/monitoring`)
+            .then(async response => {
+                const body = await response.json();
+                if (!response.ok) throw new Error(body.error || 'Monitoring is unavailable.');
+                setData(body);
+            })
+            .catch(err => setError(err.message));
+    }, [tenant.id]);
+
+    return (
+        <div className="modal-backdrop" onClick={onClose}>
+            <div className="modal-content" onClick={event => event.stopPropagation()}>
+                <h2>{tenant.name} Monitoring</h2>
+                {error && <p className="error-message">{error}</p>}
+                {!data && !error && <p>Checking tenant agent...</p>}
+                {data && <>
+                    <div className="metric-grid">
+                        <div><span>Status</span><strong>{data.status}</strong></div>
+                        <div><span>Odoo</span><strong>{data.odoo_version}</strong></div>
+                        <div><span>Users</span><strong>{data.users}</strong></div>
+                        <div><span>Products</span><strong>{data.products}</strong></div>
+                        <div><span>Warehouses</span><strong>{data.warehouses}</strong></div>
+                        <div><span>Contract</span><strong>{data.contract_version}</strong></div>
+                    </div>
+                    <div className="module-summary">
+                        {['platform', 'tenant', 'core'].map(layer => (
+                            <div key={layer}>
+                                <h3>{layer} modules</h3>
+                                <ul>{data.modules.filter(module => module.layer === layer).map(module => (
+                                    <li key={module.name}>{module.label || module.name} <small>{module.version}</small></li>
+                                ))}</ul>
+                            </div>
+                        ))}
+                    </div>
+                </>}
+                <button onClick={onClose}>Close</button>
+            </div>
+        </div>
+    );
+};
+
+const CustomizationModal = ({ tenant, onClose }) => {
+    const [file, setFile] = useState(null);
+    const [token, setToken] = useState(() => sessionStorage.getItem('customizationAdminToken') || '');
+    const [report, setReport] = useState(null);
+    const [error, setError] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [deployed, setDeployed] = useState(false);
+
+    const submit = async (action) => {
+        if (!file || !token) return;
+        setBusy(true);
+        setError('');
+        sessionStorage.setItem('customizationAdminToken', token);
+        const formData = new FormData();
+        formData.append('package', file);
+        try {
+            const response = await fetch(`/api/tenants/${tenant.id}/customizations/${action}`, {
+                method: 'POST',
+                headers: { 'X-Customization-Admin-Token': token },
+                body: formData,
+            });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.error || `Could not ${action} package.`);
+            setReport(body);
+            if (action === 'deploy') setDeployed(true);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="modal-backdrop" onClick={onClose}>
+            <div className="modal-content customization-modal" onClick={event => event.stopPropagation()}>
+                <h2>Deploy customization to {tenant.name}</h2>
+                <label>Odoo module package</label>
+                <input type="file" accept=".zip,application/zip" onChange={event => { setFile(event.target.files[0]); setReport(null); setDeployed(false); }} />
+                <label>Operator token</label>
+                <input type="password" value={token} onChange={event => setToken(event.target.value)} autoComplete="off" />
+                {error && <p className="error-message">{error}</p>}
+                {report && <div className="validation-report">
+                    <strong>{report.module}</strong>
+                    <span>{report.files} files, {Math.ceil(report.size / 1024)} KB</span>
+                    {report.warnings.map(warning => <p key={warning}>{warning}</p>)}
+                </div>}
+                {deployed && <p className="success-message">Package deployed to the isolated tenant addon layer.</p>}
+                <div className="modal-actions">
+                    <button onClick={() => submit('validate')} disabled={!file || !token || busy}>Validate</button>
+                    <button onClick={() => submit('deploy')} disabled={!report || deployed || busy}>Deploy</button>
+                    <button onClick={onClose}>Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- Main Dashboard Component ---
 
@@ -95,7 +198,7 @@ const TenantDashboard = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [modal, setModal] = useState({ type: null, tenant: null }); // { type: 'log' | 'expiry', tenant: object }
+    const [modal, setModal] = useState({ type: null, tenant: null });
 
     useEffect(() => {
         // ... (fetchTenants and WebSocket logic remains the same)
@@ -138,9 +241,10 @@ const TenantDashboard = () => {
                         ? { ...t, creation_log: (t.creation_log || '') + log }
                         : t
                 ));
-                if (modal.type === 'log' && modal.tenant.id === tenant_id) {
-                    setModal(prev => ({...prev, tenant: {...prev.tenant, creation_log: (prev.tenant.creation_log || '') + log}}));
-                }
+                setModal(prev => {
+                    if (prev.type !== 'log' || prev.tenant?.id !== tenant_id) return prev;
+                    return {...prev, tenant: {...prev.tenant, creation_log: (prev.tenant.creation_log || '') + log}};
+                });
             }
         };
 
@@ -172,6 +276,12 @@ const TenantDashboard = () => {
         }
         if (modal.type === 'expiry') {
             return <ExpiryModal tenant={modal.tenant} onClose={() => setModal({type: null, tenant: null})} onExpirySet={() => {}} />;
+        }
+        if (modal.type === 'monitoring') {
+            return <MonitoringModal tenant={modal.tenant} onClose={() => setModal({type: null, tenant: null})} />;
+        }
+        if (modal.type === 'customization') {
+            return <CustomizationModal tenant={modal.tenant} onClose={() => setModal({type: null, tenant: null})} />;
         }
         return null;
     };
@@ -225,6 +335,8 @@ const TenantDashboard = () => {
                                 {tenant.state === 'creating' && <button onClick={() => setModal({type: 'log', tenant})}>View Log</button>}
                                 {tenant.state === 'active' && <button className="action-btn-disable" onClick={() => handleLifecycleAction(tenant.id, 'disable')}>Disable</button>}
                                 {tenant.state === 'disabled' && <button className="action-btn-enable" onClick={() => handleLifecycleAction(tenant.id, 'enable')}>Enable</button>}
+                                {tenant.state === 'active' && <button onClick={() => setModal({type: 'monitoring', tenant})}>Monitor</button>}
+                                <button onClick={() => setModal({type: 'customization', tenant})}>Customize</button>
                                 <button onClick={() => setModal({type: 'expiry', tenant})}>Set Expiry</button>
                             </td>
                         </tr>

@@ -29,6 +29,9 @@ func main() {
 		api.POST("/tenants/:id/enable", handlers.EnableTenant)
 		api.PUT("/tenants/:id/expiry", handlers.SetTenantExpiry)
 		api.DELETE("/tenants/:id", handlers.DeleteTenant)
+		api.GET("/tenants/:id/monitoring", handlers.GetTenantMonitoring)
+		api.POST("/tenants/:id/customizations/validate", handlers.ValidateTenantCustomization)
+		api.POST("/tenants/:id/customizations/deploy", handlers.DeployTenantCustomization)
 
 		api.GET("/mobile/tenants", handlers.GetTenantsList)
 		api.POST("/mobile/login", handlers.MobileLogin)

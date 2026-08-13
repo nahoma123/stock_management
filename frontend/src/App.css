@@ -200,3 +200,88 @@ h1 {
     border-color: #28a745;
     color: white;
 }
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.metric-grid div {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.metric-grid span, .metric-grid strong {
+    display: block;
+}
+
+.metric-grid span {
+    color: #666;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.module-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+}
+
+.module-summary h3 {
+    margin: 0 0 8px;
+    text-transform: capitalize;
+}
+
+.module-summary ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.module-summary small {
+    color: #777;
+}
+
+.customization-modal > label {
+    font-weight: 600;
+    margin: 10px 0 5px;
+}
+
+.customization-modal > input {
+    padding: 9px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+}
+
+.validation-report {
+    display: grid;
+    gap: 6px;
+    margin-top: 15px;
+    padding: 12px;
+    border: 1px solid #91caff;
+    border-radius: 6px;
+    background: #e6f4ff;
+}
+
+.validation-report p {
+    margin: 0;
+}
+
+.success-message {
+    color: #237804;
+    font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .metric-grid, .module-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .actions {
+        flex-wrap: wrap;
+    }
+}

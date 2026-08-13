@@ -44,3 +44,11 @@
 - [x] Add Machine Code upsert behavior and Model Code product field
 - [x] Install Inventory and importer for newly provisioned tenants
 - [ ] Verify import against a representative customer workbook
+
+## Managed Tenant Customization Foundation
+- [x] Formalize core, platform, and tenant addon layers
+- [x] Add authenticated, versioned tenant management agent
+- [x] Add central health and installed-module monitoring
+- [x] Add isolated customization package validation and deployment
+- [x] Add superadmin monitoring and customization controls
+- [ ] Add staging promotion, automated module installation, and rollback releases

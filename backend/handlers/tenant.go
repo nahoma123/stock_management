@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +20,8 @@ import (
 	"saas-superadmin-backend/services"
 	"saas-superadmin-backend/websocket"
 )
+
+var tenantSubdomainPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,63}$`)
 
 func GetTenants(c *gin.Context) {
 	var tenants []models.Tenant
@@ -56,7 +61,7 @@ func EnableTenant(c *gin.Context) {
 	containerName := fmt.Sprintf("odoo_tenant_%d", id)
 
 	services.UpdateLogAndBroadcast(id, "Enabling tenant container...\n")
-	
+
 	if err := services.EnsureDummyModuleExists(tenant.Subdomain); err != nil {
 		log.Printf("Error ensuring dummy module exists: %v", err)
 	}
@@ -155,12 +160,26 @@ func CreateTenant(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	req.Subdomain = strings.ToLower(strings.TrimSpace(req.Subdomain))
+	if !tenantSubdomainPattern.MatchString(req.Subdomain) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Subdomain must start with a letter and contain only lowercase letters, numbers, hyphens, or underscores"})
+		return
+	}
 
 	dbName := strings.ToLower(strings.ReplaceAll(req.Subdomain, ".", "_")) + "_db"
 	now := time.Now()
-	
-	// Generate unique API Key for the mobile stats app
-	apiKey := "tenant_key_" + fmt.Sprintf("%d", time.Now().UnixNano())
+
+	// Generate separate credentials for the tenant-facing API and private management agent.
+	apiKey, err := randomToken("tenant_key_")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tenant credentials"})
+		return
+	}
+	agentToken, err := randomToken("agent_")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tenant credentials"})
+		return
+	}
 
 	newTenant := models.Tenant{
 		Name:       req.Name,
@@ -168,6 +187,7 @@ func CreateTenant(c *gin.Context) {
 		DbName:     dbName,
 		State:      "creating",
 		ApiKey:     apiKey,
+		AgentToken: agentToken,
 		CreateDate: &now,
 		WriteDate:  &now,
 	}
@@ -183,13 +203,21 @@ func CreateTenant(c *gin.Context) {
 	go createTenantInBackground(newTenant)
 }
 
+func randomToken(prefix string) (string, error) {
+	value := make([]byte, 24)
+	if _, err := rand.Read(value); err != nil {
+		return "", err
+	}
+	return prefix + hex.EncodeToString(value), nil
+}
+
 func createTenantInBackground(tenant models.Tenant) {
 	services.UpdateLogAndBroadcast(tenant.ID, "Starting tenant creation process...\n")
 	dbHost := services.GetEnv("POSTGRES_HOST", "localhost")
 	dbPort := services.GetEnv("POSTGRES_PORT", "5432")
 	dbUser := services.GetEnv("POSTGRES_USER", "odoo")
 	dbPassword := services.GetEnv("POSTGRES_PASSWORD", "odoo")
-	
+
 	services.UpdateLogAndBroadcast(tenant.ID, fmt.Sprintf("Attempting to create database '%s'...\n", tenant.DbName))
 	createDbSQL := fmt.Sprintf("CREATE DATABASE \"%s\" OWNER \"%s\"", tenant.DbName, dbUser)
 	if err := database.DB.Exec(createDbSQL).Error; err != nil {

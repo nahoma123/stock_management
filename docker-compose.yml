@@ -38,6 +38,7 @@ services:
       - GIN_MODE=release
       - HOST_PROJECT_PATH=/home/nahom/Desktop/project/odoo_project
       - DOCKER_NETWORK=saas_net
+      - CUSTOMIZATION_ADMIN_TOKEN=${CUSTOMIZATION_ADMIN_TOKEN:-}
     volumes:
       - ./custom_addons:/mnt/extra-addons
       - ./odoo.conf:/etc/odoo/odoo.conf

@@ -129,7 +129,7 @@ func DockerCreateAndStartInitContainer(tenant models.Tenant, dbHost, dbPort, dbU
 			"odoo", "--config=/dev/null", "--database", tenant.DbName,
 			"--db_host", dbHost, "--db_port", dbPort, "--db_user", dbUser, "--db_password", dbPassword,
 			"--addons-path=/mnt/tenant-addons,/mnt/platform-addons,/usr/lib/python3/dist-packages/odoo/addons",
-			"--init", "base,web,sale_management,stock,daily_sales_report,initial_data_import",
+			"--init", "base,web,sale_management,stock,daily_sales_report,initial_data_import,tenant_management_agent",
 			"--stop-after-init",
 		},
 		HostConfig: HostConfig{
@@ -188,6 +188,8 @@ func DockerCreateAndStartDaemonContainer(tenant models.Tenant, dbHost, dbPort, d
 			fmt.Sprintf("DB_PORT=%s", dbPort),
 			fmt.Sprintf("DB_USER=%s", dbUser),
 			fmt.Sprintf("DB_PASSWORD=%s", dbPassword),
+			fmt.Sprintf("TENANT_AGENT_TOKEN=%s", tenant.AgentToken),
+			fmt.Sprintf("MANAGED_TENANT_ID=%d", tenant.ID),
 		},
 		HostConfig: HostConfig{
 			NetworkMode: dockerNetwork,
