@@ -1,145 +1,45 @@
-# Mobile App API Documentation
+# Mobile API
 
-This document describes the API endpoints provided by the Superadmin Go backend for consumption by the mobile application.
+The Go backend exposes a prototype mobile API under `/api/mobile`. Except for tenant discovery and login, endpoints accept a tenant API key in `X-API-Key` or `api_key` query parameter.
 
-## Authentication
-All endpoints require an API Key associated with a specific tenant.
-Pass the API Key via the `X-API-Key` HTTP Header or as a query parameter `?api_key=...`.
+## Status warning
 
-**Header Example:**
-```http
-X-API-Key: tenant_key_1234567890abcdef
-```
+The stats and settings handlers are implemented. End-to-end mobile login is currently broken because it authenticates against `http://odoo:8069`, while the platform creates `odoo_tenant_<id>` containers. The returned API key is tenant-wide rather than user-scoped. Do not treat this API as production-ready authentication.
 
----
+## Tenant discovery
 
-## Endpoints
+`GET /api/mobile/tenants` requires no API key and returns `id`, `name`, and `subdomain` for active tenants.
 
-### 1. Get Mobile Stats
-Retrieves sales statistics and top products for the tenant's Odoo database.
+## Login
 
-- **URL**: `/api/mobile/stats`
-- **Method**: `GET`
-- **Success Response**: `200 OK`
-```json
-{
-  "stats": {
-    "tenant_name": "My Shop",
-    "subdomain": "myshop",
-    "state": "active",
-    "license_expiry_date": "2027-01-01",
-    "total_sales_all_time": 150000.0,
-    "order_count_all_time": 120,
-    "total_sales_today": 5000.0,
-    "order_count_today": 2,
-    "total_sales_yesterday": 4000.0,
-    "order_count_yesterday": 4,
-    "total_sales_month": 35000.0,
-    "order_count_month": 15
-  },
-  "weekly_trend": [
-    {
-      "date": "2026-05-15",
-      "total_revenue": 1000.0,
-      "order_count": 1
-    },
-    {
-      "date": "2026-05-16",
-      "total_revenue": 4000.0,
-      "order_count": 4
-    }
-  ],
-  "recent_orders": [
-    {
-      "name": "S00120",
-      "date_order": "2026-05-21T14:30:00Z",
-      "amount_total": 1250.0,
-      "state": "sale"
-    }
-  ],
-  "top_products": [
-    {
-      "name": "Product A",
-      "quantity": 50,
-      "total_revenue": 25000.0
-    }
-  ]
-}
-```
+`POST /api/mobile/login` accepts `tenant_id`, `email`, and `password`, intends to authenticate against Odoo JSON-RPC, and returns the tenant API key. Correct per-tenant routing and user-scoped session design are required.
 
----
+## Sales dashboard
 
-### 2. Register Mobile Device (Push Notifications)
-Registers a mobile device token (FCM/APNs) to receive push notifications for significant business events.
+`GET /api/mobile/stats` requires the API key. It returns:
 
-- **URL**: `/api/mobile/devices`
-- **Method**: `POST`
-- **Request Body**:
-```json
-{
-  "device_token": "fcm_token_string_here",
-  "platform": "android" // or "ios"
-}
-```
-- **Success Response**: `200 OK`
-```json
-{
-  "message": "Device registered successfully"
-}
-```
+- Tenant name, subdomain, state, and expiry
+- Confirmed sales totals/order counts for all time, current month, today, and yesterday
+- Seven-day revenue/order trend for days with orders
+- Five most recent orders
+- Five products ranked by sold quantity
 
----
+When `sale_order` is not yet initialized, it returns an initializing response instead of sales data.
 
-### 3. Unregister Mobile Device
-Removes a device token to stop receiving push notifications.
+## Device endpoints
 
-- **URL**: `/api/mobile/devices/:token`
-- **Method**: `DELETE`
-- **Success Response**: `200 OK`
-```json
-{
-  "message": "Device unregistered successfully"
-}
-```
+- `POST /api/mobile/devices`: register `device_token` and `platform`
+- `DELETE /api/mobile/devices/:token`: remove a token for the authenticated tenant
+- `PUT /api/mobile/settings`: set `min_notification_amount`
 
----
+These records do not result in real push delivery yet.
 
-### 4. Update Notification Settings
-Updates the user's notification preferences, such as the minimum sale amount required to trigger a push notification.
+## Sale webhook
 
-- **URL**: `/api/mobile/settings`
-- **Method**: `PUT`
-- **Request Body**:
-```json
-{
-  "min_notification_amount": 1000.0
-}
-```
-- **Success Response**: `200 OK`
-```json
-{
-  "message": "Settings updated successfully",
-  "min_notification_amount": 1000.0
-}
-```
+`POST /api/webhooks/odoo/sale` accepts database name, order identity, amount, and customer. When the amount reaches the tenant threshold, the backend finds registered devices and writes dummy push messages to logs.
 
----
+The webhook has no authentication or signature. The `mobile_push_notifications` addon that calls it is not installed for new tenants by default.
 
-## Odoo Internal Webhooks (Not for Mobile App)
+## Flutter client
 
-### 1. Sale Webhook
-Triggered internally by the `mobile_push_notifications` Odoo addon when a sale order is confirmed.
-
-- **URL**: `/api/webhooks/odoo/sale`
-- **Method**: `POST`
-- **Authentication**: None (Internal only, authenticated via `db_name` lookup)
-- **Request Body**:
-```json
-{
-  "db_name": "tenant1_db",
-  "order_id": 42,
-  "order_name": "S00042",
-  "amount_total": 1500.0,
-  "customer_name": "John Doe"
-}
-```
+`mobile_app/` includes store selection, Odoo credential form, persisted API key, sales summary cards, weekly chart, recent orders, top products, pull-to-refresh, and notification-threshold settings. Its base URL is hardcoded to `http://superadmin.localhost:8090/api`.

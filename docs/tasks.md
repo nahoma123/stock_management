@@ -1,55 +1,51 @@
-# Project Tasks
+# Implementation Tracker
 
-## Completing Owner Info Features
-- [x] Document task in docs/tasks.md
-- [x] Expose API Key in React Dashboard
-- [x] Add owner_email field to res_company in daily_sales_report
-- [x] Update mail_template.xml to use owner_email
-- [x] Create views for owner_email and add to __manifest__.py
-- [x] Verify functionality
+This tracker summarizes current source status. Use [Feature Status](./feature_status.md) for behavior and limitations.
 
-## Mobile App API & Push Notifications
-- [x] Document task in docs/tasks.md
-- [x] Update Go Backend Models (MobileDevice, MinNotificationAmount)
-- [x] Implement Mobile API endpoints (devices, settings)
-- [x] Implement Webhook receiver in Go Backend
-- [x] Create mobile_push_notifications Odoo Addon
-- [x] Create API Documentation (docs/mobile_api.md)
-- [x] Verify functionality
+## Completed foundations
 
-## Enhanced Mobile Dashboard API
-- [x] Document task in docs/tasks.md
-- [x] Enhance backend/main.go (Yesterday stats & 7-Day Trend)
-- [x] Update docs/mobile_api.md
-- [x] Verify functionality
+- [x] Go/React tenant control plane
+- [x] Per-tenant database, Odoo container, and addon directory provisioning
+- [x] WebSocket tenant state and creation-log updates
+- [x] Enable, disable, expiry, monitoring, and backend deletion operations
+- [x] Authenticated tenant management-agent contract
+- [x] Central monitoring metrics and module-layer inventory
+- [x] CSV/XLSX product import with preview, ETB/USD prices, embedded primary image, and opening stock
+- [x] Daily sales summary email addon and owner-email setting
+- [x] Versioned customization validation, staging, activation, audit, and rollback
+- [x] Team/developer documentation website and generated System Map
 
-## Project Cleanup & Refactoring
-- [x] Document task in docs/tasks.md
-- [x] Remove Dead Code & Artifacts
-- [x] Clean up Orphaned Docker Containers
-- [x] Modularize Go Backend
-- [x] Verify functionality
+## Acceptance still required
 
-## Flutter Mobile Application Scaffolding
-- [/] Document task in docs/tasks.md
-- [ ] Scaffold Flutter Project Template
-- [ ] Configure pubspec.yaml Dependencies
-- [ ] Setup Architecture Skeleton (Core & Feature folders)
-- [ ] Implement Core Network, Theme, and Storage Utilities
-- [ ] Verify Scaffolding via flutter analyze
+- [ ] Verify product import against a representative customer workbook
+- [ ] Verify outgoing email and daily report delivery in a configured tenant
+- [ ] Test customization activation and rollback with a representative tenant module and data migration
+- [ ] Test complete tenant backup and restore after persistent filestore design is added
 
-## Initial Product Data Import
-- [x] Add CSV and XLSX upload wizard with preview and validation
-- [x] Map products, ETB/USD prices, embedded primary pictures, and opening stock
-- [x] Add Machine Code upsert behavior and Model Code product field
-- [x] Install Inventory and importer for newly provisioned tenants
-- [ ] Verify import against a representative customer workbook
+## Partially implemented
 
-## Managed Tenant Customization Foundation
-- [x] Formalize core, platform, and tenant addon layers
-- [x] Add authenticated, versioned tenant management agent
-- [x] Add central health and installed-module monitoring
-- [x] Add isolated customization package validation and deployment
-- [x] Add superadmin monitoring and customization controls
-- [x] Add versioned staging, automated module maintenance, and rollback releases
-- [x] Add central release and operator audit records
+- [x] Flutter login, dashboard, chart, recent orders, top products, and settings screens exist
+- [ ] Route Flutter/Odoo authentication to the selected `odoo_tenant_<id>` container
+- [ ] Replace hardcoded mobile base URL with environment configuration
+- [x] Device registration, notification threshold, sale webhook, and Odoo hook exist
+- [ ] Authenticate the sale webhook
+- [ ] Install the notification addon through an intentional rollout if the feature is retained
+- [ ] Connect a real FCM/APNs provider; current delivery is log-only
+
+## Production blockers
+
+- [ ] Add operator authentication and authorization to the superadmin
+- [ ] Add persistent tenant filestore storage and tested backups
+- [ ] Replace development credentials and restrict exposed services
+- [ ] Add observability, resource limits, and production health checks
+- [ ] Configure production DNS/TLS and network policy
+- [ ] Add durable provisioning recovery/idempotency
+
+## Product roadmap
+
+- [ ] Automated license-expiry enforcement
+- [ ] Billing and subscription management
+- [ ] Audit-event UI with operator attribution
+- [ ] Batch platform-addon rollout to existing tenants
+- [ ] Customer domains and automated certificate lifecycle
+- [ ] High availability and multi-host scheduling

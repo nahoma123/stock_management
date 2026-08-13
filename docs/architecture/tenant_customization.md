@@ -32,8 +32,8 @@ separate registration or enrollment path exists.
 ## Operator configuration
 
 Set `CUSTOMIZATION_ADMIN_TOKEN` in the root `.env` file before starting the Compose stack. The React
-superadmin asks for this token only when validating or deploying a customization and retains it in browser
-session storage. Use a long random value and rotate it when operator access changes.
+superadmin asks for this token in the customization workflow and retains it in browser session storage for
+validation, staging, activation, and rollback. Use a long random value and rotate it when operator access changes.
 
 Each tenant is provisioned with a separate random management-agent token that is never serialized by the
 superadmin API.

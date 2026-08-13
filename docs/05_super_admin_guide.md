@@ -1,41 +1,38 @@
-# Super Admin Guide
+# Superadmin Guide
 
-The React superadmin at `http://superadmin.localhost` is the single control plane for tenant lifecycle
-operations. Its Go API stores tenant metadata, provisions tenant databases and containers, and communicates
-with each Odoo instance through the authenticated management-agent contract.
+The React dashboard at `http://superadmin.localhost:8090` is the central tenant control plane in local development.
 
-## Create a tenant
+## Dashboard capabilities
 
-1. Open the superadmin dashboard.
-2. Enter the company name and a unique lowercase subdomain.
-3. Select **Create Tenant**.
-4. Follow provisioning progress in the creation log.
+- Create tenants with a company name and validated lowercase subdomain
+- Receive creation state and log updates over WebSocket
+- Search tenants and filter by state
+- Copy the tenant API key displayed in the table
+- Disable an active tenant or enable a disabled tenant
+- Set and display license expiry
+- View agent monitoring for active tenants
+- Validate, stage, activate, and roll back tenant customization releases
 
-Provisioning creates the database, isolated addon directory, management credential, initialized Odoo
-modules, and tenant container. A successful tenant becomes `active`; failures become `error` and retain their
-creation log for diagnosis.
+The backend has deletion and audit-list endpoints, but the current dashboard does not expose delete or audit controls.
 
-## Tenant operations
+## Tenant creation
 
-The dashboard supports searching tenants, inspecting creation logs, enabling or disabling a tenant, setting
-license expiry, opening monitoring, deploying tenant customizations, and deleting a tenant. Deletion removes
-the tenant container, database, addon files, and central tenant record.
+Creation immediately returns a tenant in `creating` state, then runs in a Go goroutine. The backend creates the database, isolated addon directory, init container, and daemon container. Success changes state to `active`; an error changes it to `error` and appends a creation log.
 
-Monitoring is available immediately after successful provisioning. The management-agent credential is
-private and is never returned by the tenant API.
+The init container installs `base`, `web`, `sale_management`, `stock`, `daily_sales_report`, `initial_data_import`, and `tenant_management_agent`.
 
-## Customizations
+## Monitoring
 
-Tenant Odoo modules are uploaded as ZIP packages from the customization view. Validate a package first, then
-stage it as a release. Activation stops the tenant, installs or upgrades the module, and restarts Odoo.
-Previous releases remain available for rollback. See `docs/architecture/tenant_customization.md` for the
-layering and security model.
+The management agent is installed during provisioning and authenticated with a private per-tenant token. It reports contract version, health, database, company, Odoo version, internal users, products, warehouses, and installed modules classified as tenant, platform, or core.
 
-Set `CUSTOMIZATION_ADMIN_TOKEN` before using protected customization actions. The UI keeps this token only in
-browser session storage.
+## Lifecycle behavior
 
-## Troubleshooting
+Disable stops the tenant container and marks the record disabled. Enable starts the existing container. Setting expiry only stores a date; it does not automatically disable access. API deletion force-removes the container, removes the tenant directory, drops the database, and deletes the central record.
 
-Check the tenant creation log first, followed by `docker compose logs backend` and the relevant
-`odoo_tenant_<id>` container logs. Common causes are database connectivity, invalid Odoo modules, unavailable
-Docker access, or incorrect host/network configuration.
+## Customization
+
+Customization mutation requests require `X-Customization-Admin-Token`. The browser stores the entered value in session storage. Read-only release listing and audit endpoints currently do not require that token.
+
+## Security warning
+
+General superadmin routes currently have no login or role enforcement. Keep this interface network-restricted and do not treat it as internet-ready. See [Security and Limitations](./security_and_limitations.md).

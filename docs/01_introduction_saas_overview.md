@@ -1,45 +1,45 @@
-# Section 1: Introduction & SaaS Overview
+# System Overview
 
-## 1.1 Purpose of the Project
+## Purpose
 
-This project aims to develop a Software as a Service (SaaS) application for Stock Management. The system will allow multiple businesses (tenants) to manage their inventory, stock levels, product tracking, and potentially orders and suppliers, all from a centrally hosted platform. Each tenant will have a dedicated, isolated environment while benefiting from shared infrastructure and updates.
+The Stock Platform is a managed, multi-company inventory and sales platform built on Odoo 18. A React/Go control plane provisions a separate Odoo container, PostgreSQL database, and tenant-addon directory for every customer company.
 
-The primary goal is to provide a scalable, robust, and easy-to-use stock management solution that can be quickly provisioned for new clients, offering a cost-effective alternative to on-premise or custom-built systems.
+## Runtime architecture
 
-## 1.2 Core SaaS Principles
+The checked-in Compose stack contains:
 
-The development of this Stock Management SaaS adheres to fundamental SaaS principles:
+- `db`: PostgreSQL 16 for control-plane tables and tenant databases
+- `backend`: Gin/GORM API for tenant lifecycle, monitoring, mobile data, and customization releases
+- `frontend`: React superadmin served by Nginx
+- `documentation`: this Markdown-driven documentation site
+- `traefik`: local hostname routing on host port `8090`
 
-*   **Multi-Tenancy:** The architecture serves multiple tenants while isolating each tenant's data and custom code. Every tenant receives a separate PostgreSQL database, addon directory, and Odoo container managed by the central Go control plane.
-*   **Central Management & Provisioning:** A central super-administrator interface is a core component. This interface is responsible for:
-    *   Tenant lifecycle management (creation, suspension, deletion).
-    *   Monitoring tenant health and resource usage.
-    *   Managing master configurations and application updates.
-    *   Automated or semi-automated provisioning of new tenant instances.
-*   **Scalability:** The system is designed with scalability in mind, leveraging Docker to allow for horizontal scaling of application servers and database services as the number of tenants and their load increases.
-*   **Customization (where applicable):** While the core application is shared, tenants may have options for certain customizations (e.g., themes, specific workflows if supported by the underlying Odoo modules) without affecting the core codebase.
-*   **Subscription-Based Model:** (Implied) SaaS solutions are typically offered on a subscription basis, though the implementation of billing and subscription management is outside the scope of the current technical tasks but is a consideration for a production system.
+Tenant Odoo containers are created dynamically through the Docker socket and are not static Compose services. Their names are `odoo_tenant_<id>`. Initialization and module maintenance use transient containers.
 
-## 1.3 High-Level Architecture
+## Tenant isolation
 
-The system employs a tiered architecture, containerized using Docker for deployment and scalability:
+Each tenant has:
 
-1.  **Super Admin Control Plane:**
-    *   **React frontend:** Provides tenant creation, lifecycle, monitoring, and customization controls.
-    *   **Go backend:** Stores tenant metadata and performs provisioning through PostgreSQL and Docker APIs.
+- A database named from its subdomain, such as `acme_db`
+- A long-running Odoo container
+- A tenant-owned addon directory under `tenants/<subdomain>/custom_addons`
+- A private management-agent token
+- A tenant API key used by the mobile API
 
-2.  **Tenant Instances:**
-    *   **Odoo Tenant Containers:** Each active tenant runs in its own Odoo container with a dedicated database and tenant-addon mount.
-    *   **Tenant Databases (`db` - PostgreSQL Service):** A PostgreSQL service that hosts the individual databases for each tenant (e.g., `tenant1_db`, `tenant2_db`). Each tenant's data is isolated within its own database.
-        *   New tenant databases are created by the central Go provisioning API.
-    *   **Configuration:** The Go backend creates initialization, maintenance, and long-running tenant containers through the Docker API.
+Shared platform addons are mounted read-only at `/mnt/platform-addons`. Tenant releases are mounted at `/mnt/tenant-addons`. Odoo packaged modules form the core layer.
 
-3.  **Docker & Containerization:**
-    *   **`docker-compose.yml`:** Defines and manages all services (Odoo instances, PostgreSQL databases), their configurations, volumes, ports, and networks.
-    *   **`Dockerfile.odoo`:** Builds the Odoo 18 image used by tenant initialization, maintenance, and daemon containers.
-    *   **Volumes:** PostgreSQL data uses a named volume. Tenant-specific addon releases use isolated directories under `tenants/`.
+## Provisioned applications
 
-4.  **Web Server/Reverse Proxy:**
-    *   Traefik routes the superadmin, documentation, and tenant hostnames to their containers. Production configuration must add managed DNS and TLS.
+New tenants initialize Odoo `base`, `web`, Sales, Inventory, Daily Sales Report, Initial Product Data Import, and Tenant Management Agent. The exact list is defined in `DockerCreateAndStartInitContainer` and appears automatically on the documentation System Map.
 
-This architecture separates the control plane from tenant business applications while preserving per-company data and customization isolation.
+`shopping_portal` and `mobile_push_notifications` exist in the repository but are not installed by default.
+
+## Control plane
+
+The React dashboard can create, search, enable, disable, monitor, customize, and set expiry for tenants. Creation progress arrives over WebSocket. The Go API also has a tenant-deletion endpoint, but the current React table does not expose a delete button.
+
+Only customization mutation endpoints use `CUSTOMIZATION_ADMIN_TOKEN`. The remaining control-plane endpoints currently have no operator authentication; see [Security and Limitations](./security_and_limitations.md).
+
+## Current status
+
+Use [Feature Status](./feature_status.md) as the concise source of truth for available, prototype, and incomplete capabilities.

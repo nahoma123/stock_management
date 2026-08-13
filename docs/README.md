@@ -1,14 +1,30 @@
-# Project Documentation
+# Stock Platform Documentation
 
-This documentation provides a comprehensive overview of the Odoo SaaS platform, covering its architecture, setup, management, and future development.
+These are the maintained source documents rendered by the website in `documentation/`.
 
-## Sections
+## Team documentation
 
-1.  [Introduction & SaaS Overview](./01_introduction_saas_overview.md)
-2.  [Docker Configuration Explained](./02_docker_configuration.md)
-3.  [Local Development Setup](./03_local_development_setup.md)
-4.  [Production Deployment Guide](./04_production_deployment_guide.md)
-5.  [Super Admin Guide](./05_super_admin_guide.md)
-6.  [Tenant Customization Guide](./06_tenant_customization_guide.md)
-7.  [Extending the Platform](./07_extending_the_platform.md)
-8.  [Future Considerations & Roadmap](./08_future_considerations_roadmap.md)
+- [Team overview](./team/overview.md)
+- [Sales and demos](./team/sales.md)
+- [Product and testing](./team/product-testing.md)
+- [Operations](./team/operations.md)
+
+## Developer documentation
+
+- [System overview](./01_introduction_saas_overview.md)
+- [Feature status](./feature_status.md)
+- [Docker configuration](./02_docker_configuration.md)
+- [Local development](./03_local_development_setup.md)
+- [Production readiness](./04_production_deployment_guide.md)
+- [Superadmin behavior](./05_super_admin_guide.md)
+- [Initial data import](./initial_data_import.md)
+- [Tenant customization](./06_tenant_customization_guide.md)
+- [Extending the platform](./07_extending_the_platform.md)
+- [Security and limitations](./security_and_limitations.md)
+- [Roadmap](./08_future_considerations_roadmap.md)
+- [Mobile API](./mobile_api.md)
+- [Customization architecture](./architecture/tenant_customization.md)
+
+## Documentation policy
+
+Describe a capability as available only when the code path is connected and testable through its intended user workflow. Label partial integrations as prototypes or known limitations. Historical investigations and superseded designs belong in `docs/archive/` and are excluded from the website.

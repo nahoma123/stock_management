@@ -1,48 +1,38 @@
-# Production Deployment Guide
+# Production Readiness
 
-This project currently provides a single-host Docker Compose deployment. Production operation requires a
-Linux host with Docker Engine, Compose, persistent storage, DNS, TLS termination, and a backup destination.
+The current Compose deployment is a development/initial managed-deployment foundation, not a production-ready reference architecture.
 
-## Configuration
+## Blockers before customer production
 
-1. Point wildcard tenant DNS and the superadmin hostname at the deployment host.
-2. Set strong PostgreSQL credentials and a long random `CUSTOMIZATION_ADMIN_TOKEN` in the deployment
-   environment.
-3. Set `HOST_PROJECT_PATH` to the absolute checkout path used for tenant addon bind mounts.
-4. Restrict access to the Docker socket, database port, and superadmin route at the host/network level.
-5. Configure Traefik with production host rules and TLS certificates.
+- Add authentication and authorization to the superadmin UI and all control-plane lifecycle endpoints
+- Remove default database credentials and external database exposure
+- Persist and back up Odoo filestores as well as PostgreSQL and tenant releases
+- Authenticate internal sale webhooks
+- Add resource limits, health checks, logging, metrics, and alerting
+- Configure production DNS, HTTPS, and restricted network access
+- Test tenant provisioning, upgrade, rollback, backup, and restore procedures
+- Decide whether to finish or disable mobile login and push-notification surfaces
 
-Never commit `.env`, API keys, database passwords, agent tokens, or customer customization packages.
+## Secrets
 
-## Deploy
-
-```bash
-docker compose build
-docker compose up -d
-docker compose ps
-```
-
-Confirm the database health check passes, the backend can reach Docker, the frontend is available through
-Traefik, and a disposable tenant can complete provisioning and monitoring.
-
-## Updates
-
-Build and test images before replacement. Apply control-plane updates first, then replace tenant containers
-when platform Odoo code changes. Customer modules should move through validate, stage, and activate; use the
-recorded prior release for rollback when an activation fails operational checks.
+Keep `.env`, database credentials, tenant API keys, agent tokens, operator tokens, and customer packages outside Git. `CUSTOMIZATION_ADMIN_TOKEN` is necessary but does not replace operator authentication for the rest of the control plane.
 
 ## Backups
 
-Back up the PostgreSQL data volume and `tenants/` directory together. The database contains both control-plane
-records and tenant databases; `tenants/` contains customer addon releases. Test full restoration regularly.
-Odoo filestore persistence must also be included before enabling features that store attachments outside the
-database.
+Back up PostgreSQL and `tenants/` consistently. Add persistent tenant filestore mounts before relying on Odoo attachments, imported images, or documents, then include those mounts in backups. A backup is not accepted until restoration into a disposable environment has been tested.
 
-## Operations
+## Deployment sequence
 
-Monitor backend, PostgreSQL, Traefik, and tenant container health. Central audit events record customization
-operations, while tenant creation logs capture provisioning. Establish resource limits, log retention,
-database maintenance, certificate renewal, and tested incident procedures before onboarding customers.
+1. Build and test backend, frontend, documentation, and Odoo images.
+2. Back up current data and releases.
+3. Apply central database migrations through backend startup.
+4. Replace control-plane services.
+5. Upgrade affected platform modules in tenant databases through a tested procedure.
+6. Validate monitoring and primary business flows on a canary tenant.
+7. Roll out to remaining tenants and retain a recovery plan.
 
-The current design is appropriate for an initial managed deployment. Multi-host scheduling, high availability,
-off-host secrets, automated backups, billing, and disaster recovery automation remain production roadmap work.
+The current project does not automate step 5 across all tenants.
+
+## Customer customization releases
+
+Use validate, stage, and activate. Activation stops the tenant, switches the module release, runs Odoo maintenance, and restarts it. Verify monitoring and the affected workflow. Rollback restores a previous code release and reruns maintenance, but it cannot guarantee reversal of every module-specific data migration; module authors must design reversible upgrades.

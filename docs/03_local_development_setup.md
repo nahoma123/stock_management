@@ -1,37 +1,58 @@
-# Local Development Setup
+# Local Development
 
-## Start the stack
+## Prerequisites
 
-1. Set a non-empty `CUSTOMIZATION_ADMIN_TOKEN` in `.env`.
-2. Run `docker compose build`.
-3. Run `docker compose up -d`.
-4. Open `http://superadmin.localhost`.
+- Docker Engine with Compose
+- Git
+- Node 20 when running either frontend outside Docker
+- Flutter SDK only when working on `mobile_app/`
 
-Traefik routes `*.localhost` automatically in modern browsers. A tenant created with subdomain `acme` is
-available at `http://acme.localhost` after provisioning finishes.
+The backend build uses Go 1.21 in Docker and vendored dependencies. Tenant Odoo runs on Odoo 18.
 
-## Create a test tenant
+## Start the platform
 
-Use the **Create Tenant** form in the React dashboard. The Go backend creates the tenant record, database,
-isolated addon directory, Odoo initialization container, and long-running tenant container. Watch progress in
-the dashboard creation log or with:
+Set `CUSTOMIZATION_ADMIN_TOKEN` in the ignored root `.env`, confirm `HOST_PROJECT_PATH` in Compose matches the checkout, then run:
 
 ```bash
-docker compose logs -f backend
-```
-
-## Development checks
-
-```bash
-docker compose build backend frontend
+docker compose build
+docker compose up -d
 docker compose ps
 ```
 
-The frontend image runs ESLint and the Vite production build. The backend image compiles from vendored Go
-dependencies. Backend unit tests can be run with the repository's Go version in a container.
+Open `http://superadmin.localhost:8090`. Create a disposable tenant and open it at `http://<subdomain>.localhost:8090` after its state becomes active.
 
-## Troubleshooting
+## Documentation development
 
-Inspect `docker compose ps`, backend logs, and the relevant `odoo_tenant_<id>` logs. Confirm PostgreSQL is
-healthy, the backend can access the Docker socket, `HOST_PROJECT_PATH` matches the checkout, and all services
-use the configured Docker network.
+```bash
+cd documentation
+npm install
+npm run dev
+```
+
+Open `http://localhost:4174`. Changes under `docs/`, Compose, backend routes, and the default Odoo module list hot reload into the site.
+
+## Checks
+
+```bash
+docker compose build backend frontend documentation
+docker compose config --quiet
+```
+
+Run backend tests in the repository’s Go image:
+
+```bash
+docker run --rm -v "$PWD/backend:/app" -w /app golang:1.21-alpine \
+  sh -lc '/usr/local/go/bin/go test -mod=vendor ./...'
+```
+
+The frontend Docker build runs ESLint and Vite. The documentation build runs Vite. Odoo addon verification requires initializing or upgrading the relevant module in a disposable database.
+
+## Logs
+
+```bash
+docker compose logs -f backend
+docker logs -f odoo_tenant_<id>
+docker logs odoo_init_<id>
+```
+
+Initialization containers are normally removed after completion, so use the dashboard creation log first.

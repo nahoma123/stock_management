@@ -19,7 +19,7 @@ Obtain the approved CSV or XLSX workbook and retain an unchanged copy. Confirm c
 
 ## Routine checks
 
-Check tenant state, monitoring availability, recent provisioning or customization audit events, license expiry, and reported user access. A healthy container alone does not prove the business workflow works.
+Check tenant state, monitoring availability, license expiry, and reported user access. Customization audit events currently require the backend API or developer assistance because the dashboard has no audit view. A healthy container alone does not prove the business workflow works.
 
 ## Customization release
 

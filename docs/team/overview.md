@@ -24,6 +24,8 @@ Each customer receives:
 
 The platform supports managed tenant provisioning, isolated customer data, product imports, central monitoring, and versioned customer customizations. Billing automation, high-availability deployment, and fully automated disaster recovery are roadmap items and should not be presented as completed capabilities.
 
+The mobile application and push-notification flow are prototypes, not customer-ready features.
+
 ## Where to report issues
 
 Record the tenant name, user action, expected result, actual result, time, and a screenshot when appropriate. Product decides priority; developers diagnose implementation details; operations handles service availability and customer access.

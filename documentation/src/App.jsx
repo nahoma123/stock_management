@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { systemDocument } from './systemDocument';
 
-const markdownFiles = import.meta.glob('../../docs/**/*.md', {
+const markdownFiles = import.meta.glob(['../../docs/**/*.md', '!../../docs/archive/**'], {
   eager: true,
   query: '?raw',
   import: 'default',
