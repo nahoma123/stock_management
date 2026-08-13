@@ -33,7 +33,8 @@ export const systemDocument = {
   path: 'generated/system-map.md',
   slug: 'system-map',
   title: 'System Map',
-  section: 'Architecture',
+  section: 'System Design',
+  area: 'developer',
   content: `# System Map
 
 > This page is generated from the current Compose and Go sources. It refreshes automatically while the documentation development server is running.

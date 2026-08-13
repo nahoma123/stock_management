@@ -4,10 +4,12 @@ import { marked } from 'marked';
 import {
   BookOpen,
   Boxes,
+  Code2,
   ChevronRight,
   FileText,
   Menu,
   Search,
+  Users,
   X,
 } from 'lucide-react';
 import { systemDocument } from './systemDocument';
@@ -39,9 +41,11 @@ const labelFromPath = (path) => path
 const sectionFromPath = (path) => {
   const relative = path.replace('../../docs/', '');
   if (relative.startsWith('archive/')) return 'Archive';
-  if (relative.startsWith('architecture/')) return 'Architecture';
+  if (relative === 'team/overview.md') return 'Start Here';
+  if (relative.startsWith('team/')) return 'Role Guides';
+  if (relative.startsWith('architecture/')) return 'System Design';
   if (/mobile/i.test(relative)) return 'API Reference';
-  return 'Guides';
+  return 'Engineering Guides';
 };
 
 const documents = [...Object.entries(markdownFiles)
@@ -51,11 +55,18 @@ const documents = [...Object.entries(markdownFiles)
     slug: slugFromPath(path),
     title: titleFromMarkdown(content, labelFromPath(path)),
     section: sectionFromPath(path),
+    area: path.includes('/team/') ? 'team' : 'developer',
   })), systemDocument]
   .sort((a, b) => a.path.localeCompare(b.path));
 
 const visibleDocuments = documents.filter((document) => document.section !== 'Archive');
-const defaultDocument = visibleDocuments.find((document) => document.slug.includes('01_introduction')) || visibleDocuments[0];
+const teamHome = visibleDocuments.find((document) => document.slug === 'team/overview');
+const developerHome = visibleDocuments.find((document) => document.slug.includes('01_introduction'));
+const defaultDocument = teamHome || visibleDocuments[0];
+const navigationSections = {
+  team: ['Start Here', 'Role Guides'],
+  developer: ['Engineering Guides', 'System Design', 'API Reference'],
+};
 
 marked.use({
   gfm: true,
@@ -77,6 +88,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const activeDocument = documents.find((document) => document.slug === route) || defaultDocument;
+  const activeArea = activeDocument?.area || 'team';
   const renderedContent = useMemo(
     () => DOMPurify.sanitize(marked.parse(activeDocument?.content || '# Documentation unavailable')),
     [activeDocument],
@@ -91,11 +103,12 @@ function App() {
   }, [activeDocument]);
   const filteredDocuments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return visibleDocuments;
-    return visibleDocuments.filter((document) =>
+    const areaDocuments = visibleDocuments.filter((document) => document.area === activeArea);
+    if (!normalizedQuery) return areaDocuments;
+    return areaDocuments.filter((document) =>
       `${document.title} ${document.content}`.toLowerCase().includes(normalizedQuery),
     );
-  }, [query]);
+  }, [activeArea, query]);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -110,6 +123,11 @@ function App() {
   const openDocument = (document) => {
     window.location.hash = `/${document.slug}`;
     setMenuOpen(false);
+  };
+
+  const openArea = (area) => {
+    setQuery('');
+    openDocument(area === 'team' ? teamHome : developerHome);
   };
 
   const handleArticleClick = (event) => {
@@ -132,7 +150,7 @@ function App() {
         </button>
         <a className="brand" href={`#/${defaultDocument?.slug || ''}`}>
           <span className="brand-mark"><Boxes size={20} /></span>
-          <span><strong>Stock Platform</strong><small>Development documentation</small></span>
+          <span><strong>Stock Platform</strong><small>{activeArea === 'team' ? 'Team documentation' : 'Developer documentation'}</small></span>
         </a>
         <div className="topbar-status"><span /> Source synced</div>
       </header>
@@ -147,8 +165,16 @@ function App() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search docs" />
           {query && <button onClick={() => setQuery('')} aria-label="Clear search"><X size={15} /></button>}
         </label>
+        <div className="area-switch" aria-label="Documentation area">
+          <button className={activeArea === 'team' ? 'active' : ''} onClick={() => openArea('team')}>
+            <Users size={16} /> Team Docs
+          </button>
+          <button className={activeArea === 'developer' ? 'active' : ''} onClick={() => openArea('developer')}>
+            <Code2 size={16} /> Developer Docs
+          </button>
+        </div>
         <nav className="document-nav" aria-label="Documentation pages">
-          {['Guides', 'Architecture', 'API Reference'].map((section) => {
+          {navigationSections[activeArea].map((section) => {
             const sectionDocuments = filteredDocuments.filter((document) => document.section === section);
             if (!sectionDocuments.length) return null;
             return <div className="nav-section" key={section}>
@@ -168,7 +194,7 @@ function App() {
           })}
           {query && !filteredDocuments.length && <p className="empty-search">No documentation matches “{query}”.</p>}
         </nav>
-        <div className="sidebar-footer"><BookOpen size={16} /> {visibleDocuments.length} maintained pages</div>
+        <div className="sidebar-footer"><BookOpen size={16} /> {filteredDocuments.length} pages in this area</div>
       </aside>
 
       {menuOpen && <button className="mobile-scrim" onClick={() => setMenuOpen(false)} aria-label="Close navigation" />}

@@ -10,7 +10,7 @@ The primary goal is to provide a scalable, robust, and easy-to-use stock managem
 
 The development of this Stock Management SaaS adheres to fundamental SaaS principles:
 
-*   **Multi-Tenancy:** The architecture is designed to serve multiple tenants (customers/businesses) from a single instance of the application. While the application instance is shared, each tenant's data is isolated and secured from other tenants. In our Odoo-based implementation, this is achieved by provisioning separate databases for each tenant, all managed by a common Odoo application server (for tenant-facing operations) and a super-admin Odoo instance for administrative tasks.
+*   **Multi-Tenancy:** The architecture serves multiple tenants while isolating each tenant's data and custom code. Every tenant receives a separate PostgreSQL database, addon directory, and Odoo container managed by the central Go control plane.
 *   **Central Management & Provisioning:** A central super-administrator interface is a core component. This interface is responsible for:
     *   Tenant lifecycle management (creation, suspension, deletion).
     *   Monitoring tenant health and resource usage.
@@ -28,18 +28,18 @@ The system employs a tiered architecture, containerized using Docker for deploym
     *   **React frontend:** Provides tenant creation, lifecycle, monitoring, and customization controls.
     *   **Go backend:** Stores tenant metadata and performs provisioning through PostgreSQL and Docker APIs.
 
-2.  **Tenant Instances (Template & Actual):**
-    *   **Odoo Tenant Service (`odoo`):** The primary Odoo application server that will handle requests for all active tenant instances. It uses `dbfilter_format = %d_db` in its `odoo.conf` to dynamically select the correct tenant database based on the request's subdomain.
+2.  **Tenant Instances:**
+    *   **Odoo Tenant Containers:** Each active tenant runs in its own Odoo container with a dedicated database and tenant-addon mount.
     *   **Tenant Databases (`db` - PostgreSQL Service):** A PostgreSQL service that hosts the individual databases for each tenant (e.g., `tenant1_db`, `tenant2_db`). Each tenant's data is isolated within its own database.
         *   New tenant databases are created by the central Go provisioning API.
-    *   **Configuration:** The `odoo` service uses `odoo.conf` which is configured to serve as a template and routing mechanism for tenant databases.
+    *   **Configuration:** The Go backend creates initialization, maintenance, and long-running tenant containers through the Docker API.
 
 3.  **Docker & Containerization:**
     *   **`docker-compose.yml`:** Defines and manages all services (Odoo instances, PostgreSQL databases), their configurations, volumes, ports, and networks.
     *   **`Dockerfile.odoo`:** Builds the Odoo 18 image used by tenant initialization, maintenance, and daemon containers.
-    *   **Volumes:** Persistent storage for Odoo application data (filestores) and PostgreSQL databases is managed using Docker named volumes (e.g., `odoo-data`, `postgres-data`, `odoo-superadmin-data`, `postgres-superadmin-data`).
+    *   **Volumes:** PostgreSQL data uses a named volume. Tenant-specific addon releases use isolated directories under `tenants/`.
 
-4.  **Web Server/Reverse Proxy (Conceptual - Not yet implemented):**
-    *   In a production environment, a reverse proxy (e.g., Nginx, Traefik) would be placed in front of the Odoo services. It would handle SSL termination, routing requests based on subdomains (e.g., `tenant1.yourdomain.com` to the `odoo` service), and potentially load balancing. This component is not part of the current setup but is a crucial part of a complete SaaS architecture.
+4.  **Web Server/Reverse Proxy:**
+    *   Traefik routes the superadmin, documentation, and tenant hostnames to their containers. Production configuration must add managed DNS and TLS.
 
-This architecture allows for a separation of concerns: the superadmin manages the platform and tenants, while the main Odoo service, in conjunction with the tenant PostgreSQL service, delivers the stock management application to each tenant in an isolated manner.
+This architecture separates the control plane from tenant business applications while preserving per-company data and customization isolation.
