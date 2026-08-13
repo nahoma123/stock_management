@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.agents
+.env
+CREDENTIALS.md
+recommendation.md
+**/node_modules
+**/dist
+tenants
+*.log

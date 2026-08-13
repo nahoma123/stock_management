@@ -1,6 +1,8 @@
 .env
 CREDENTIALS.md
 frontend/node_modules/
+documentation/node_modules/
+documentation/dist/
 
 # Go Backend local binaries and logs
 backend/backend.log

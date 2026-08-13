@@ -63,6 +63,19 @@ services:
     restart: unless-stopped
     networks:
       - saas_net
+
+  documentation:
+    build:
+      context: .
+      dockerfile: Dockerfile.documentation
+    container_name: stock_platform_docs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.documentation.rule=Host(`docs.localhost`)"
+      - "traefik.http.services.documentation.loadbalancer.server.port=80"
+    restart: unless-stopped
+    networks:
+      - saas_net
     
   traefik:
     image: traefik:v3.0

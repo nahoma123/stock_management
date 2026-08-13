@@ -1,0 +1,16 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+COPY documentation/package*.json ./documentation/
+RUN cd documentation && npm ci
+
+COPY documentation ./documentation
+COPY docs ./docs
+COPY docker-compose.yml ./docker-compose.yml
+COPY backend/main.go ./backend/main.go
+COPY backend/services/docker.go ./backend/services/docker.go
+RUN cd documentation && npm run build
+
+FROM nginx:1.25-alpine
+COPY --from=builder /app/documentation/dist /usr/share/nginx/html
+COPY documentation/nginx.conf /etc/nginx/conf.d/default.conf
