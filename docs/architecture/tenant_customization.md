@@ -18,6 +18,17 @@ tenant tables directly.
 Customization packages are privileged executable Python code. Only trusted operator-reviewed packages
 should be deployed. Validation reduces accidental and common unsafe packages; it is not a sandbox.
 
+Validated packages are staged as immutable releases under the tenant addon directory. Activation stops the
+tenant, atomically changes the active module link, runs Odoo module maintenance in a transient container,
+and restarts the tenant. A failed activation restores the prior code link and reruns maintenance against it.
+Superseded releases remain available for operator-triggered rollback. Release changes and enrollment attempts
+are recorded in the central audit event table.
+
+The Go provisioning API and React superadmin are the tenant registration authority. The historical
+`saas_management_tools` Odoo provisioning wizard is intentionally not restored: it mixed tenant business
+logic with host database and process control. Existing tenants can instead be enrolled from the monitoring
+view, which installs or upgrades the stable agent contract and assigns a private per-tenant credential.
+
 ## Operator configuration
 
 Set `CUSTOMIZATION_ADMIN_TOKEN` in the root `.env` file before starting the Compose stack. The React
@@ -25,5 +36,5 @@ superadmin asks for this token only when validating or deploying a customization
 session storage. Use a long random value and rotate it when operator access changes.
 
 New tenants are provisioned with a separate random management-agent token that is never serialized by the
-superadmin API. Existing tenants created before this architecture require a future enrollment/reprovisioning
-step before their monitoring endpoint becomes available.
+superadmin API. Existing tenants created before this architecture can be enrolled through the protected
+monitoring enrollment action.

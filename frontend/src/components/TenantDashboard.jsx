@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 // --- Sub-components ---
 
@@ -89,6 +89,7 @@ const ExpiryModal = ({ tenant, onClose, onExpirySet }) => {
 const MonitoringModal = ({ tenant, onClose }) => {
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
+	const [enrolling, setEnrolling] = useState(false);
 
     useEffect(() => {
         fetch(`/api/tenants/${tenant.id}/monitoring`)
@@ -100,11 +101,33 @@ const MonitoringModal = ({ tenant, onClose }) => {
             .catch(err => setError(err.message));
     }, [tenant.id]);
 
+    const enroll = async () => {
+        const token = sessionStorage.getItem('customizationAdminToken') || window.prompt('Customization administrator token');
+        if (!token) return;
+        sessionStorage.setItem('customizationAdminToken', token);
+        setEnrolling(true);
+        setError('');
+        try {
+            const response = await fetch(`/api/tenants/${tenant.id}/monitoring/enroll`, {
+                method: 'POST',
+                headers: { 'X-Customization-Admin-Token': token },
+            });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.error || 'Enrollment failed.');
+            window.location.reload();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setEnrolling(false);
+        }
+    };
+
     return (
         <div className="modal-backdrop" onClick={onClose}>
             <div className="modal-content" onClick={event => event.stopPropagation()}>
                 <h2>{tenant.name} Monitoring</h2>
                 {error && <p className="error-message">{error}</p>}
+				{error && <button onClick={enroll} disabled={enrolling}>{enrolling ? 'Enrolling...' : 'Enroll monitoring'}</button>}
                 {!data && !error && <p>Checking tenant agent...</p>}
                 {data && <>
                     <div className="metric-grid">
@@ -139,6 +162,15 @@ const CustomizationModal = ({ tenant, onClose }) => {
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const [deployed, setDeployed] = useState(false);
+	const [releases, setReleases] = useState([]);
+
+	const loadReleases = useCallback(() => fetch(`/api/tenants/${tenant.id}/customizations/releases`)
+		.then(response => response.json())
+		.then(body => setReleases(Array.isArray(body) ? body : [])), [tenant.id]);
+
+	useEffect(() => {
+		loadReleases();
+	}, [loadReleases]);
 
     const submit = async (action) => {
         if (!file || !token) return;
@@ -155,14 +187,36 @@ const CustomizationModal = ({ tenant, onClose }) => {
             });
             const body = await response.json();
             if (!response.ok) throw new Error(body.error || `Could not ${action} package.`);
-            setReport(body);
-            if (action === 'deploy') setDeployed(true);
+            setReport(body.report || body);
+            if (action === 'deploy') {
+				setDeployed(true);
+				loadReleases();
+			}
         } catch (err) {
             setError(err.message);
         } finally {
             setBusy(false);
         }
     };
+
+	const changeRelease = async (release, action) => {
+		if (!token || !window.confirm(`${action === 'rollback' ? 'Roll back to' : 'Activate'} ${release.module_name} v${release.version}?`)) return;
+		setBusy(true);
+		setError('');
+		try {
+			const response = await fetch(`/api/tenants/${tenant.id}/customizations/releases/${release.id}/${action}`, {
+				method: 'POST',
+				headers: { 'X-Customization-Admin-Token': token },
+			});
+			const body = await response.json();
+			if (!response.ok) throw new Error(body.error || 'Release change failed.');
+			await loadReleases();
+		} catch (err) {
+			setError(err.message);
+		} finally {
+			setBusy(false);
+		}
+	};
 
     return (
         <div className="modal-backdrop" onClick={onClose}>
@@ -178,12 +232,23 @@ const CustomizationModal = ({ tenant, onClose }) => {
                     <span>{report.files} files, {Math.ceil(report.size / 1024)} KB</span>
                     {report.warnings.map(warning => <p key={warning}>{warning}</p>)}
                 </div>}
-                {deployed && <p className="success-message">Package deployed to the isolated tenant addon layer.</p>}
+				{deployed && <p className="success-message">Package staged. Activate it from release history after review.</p>}
                 <div className="modal-actions">
                     <button onClick={() => submit('validate')} disabled={!file || !token || busy}>Validate</button>
                     <button onClick={() => submit('deploy')} disabled={!report || deployed || busy}>Deploy</button>
                     <button onClick={onClose}>Close</button>
                 </div>
+				<h3>Release history</h3>
+				<div className="release-list">
+					{releases.length === 0 && <p>No customization releases yet.</p>}
+					{releases.map(release => <div key={release.id}>
+						<span><strong>{release.module_name || 'Pending package'} v{release.version}</strong> {release.state}</span>
+						<div>
+							{['staged', 'failed'].includes(release.state) && <button onClick={() => changeRelease(release, 'activate')} disabled={busy}>Activate</button>}
+							{release.state === 'superseded' && <button onClick={() => changeRelease(release, 'rollback')} disabled={busy}>Roll back</button>}
+						</div>
+					</div>)}
+				</div>
             </div>
         </div>
     );

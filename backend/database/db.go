@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"saas-superadmin-backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"saas-superadmin-backend/models"
 )
 
 var DB *gorm.DB
@@ -55,7 +55,12 @@ func InitDB() {
 	log.Println("Successfully connected to the database.")
 
 	log.Println("Running AutoMigration...")
-	if err := DB.AutoMigrate(&models.Tenant{}, &models.MobileDevice{}); err != nil {
+	if err := DB.AutoMigrate(
+		&models.Tenant{},
+		&models.MobileDevice{},
+		&models.CustomizationRelease{},
+		&models.PlatformAuditEvent{},
+	); err != nil {
 		log.Fatal("Failed to auto-migrate models:", err)
 	}
 }

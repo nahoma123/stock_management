@@ -41,6 +41,10 @@ type ContainerConfig struct {
 	Labels     map[string]string `json:"Labels"`
 }
 
+type containerWaitResponse struct {
+	StatusCode int `json:"StatusCode"`
+}
+
 func GetEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -161,13 +165,82 @@ func DockerCreateAndStartInitContainer(tenant models.Tenant, dbHost, dbPort, dbU
 	if err != nil {
 		return fmt.Errorf("failed to wait for init container: %w", err)
 	}
+	var waitResult containerWaitResponse
+	if err := json.Unmarshal(resp, &waitResult); err != nil {
+		return fmt.Errorf("invalid init container result: %w", err)
+	}
 
 	logResp, _, _ := CallDockerAPI("GET", fmt.Sprintf("/containers/%s/logs?stdout=true&stderr=true", containerName), nil)
 	cleanLogs := ParseDockerLogs(logResp)
 	UpdateLogAndBroadcast(tenant.ID, cleanLogs)
 
 	CallDockerAPI("DELETE", fmt.Sprintf("/containers/%s?force=true", containerName), nil)
+	if waitResult.StatusCode != 0 {
+		return fmt.Errorf("initialization container exited with status %d", waitResult.StatusCode)
+	}
 
+	return nil
+}
+
+func DockerRunModuleMaintenance(tenant models.Tenant, moduleName string) error {
+	dockerNetwork := GetEnv("DOCKER_NETWORK", "saas_net")
+	containerName := fmt.Sprintf("odoo_maintenance_%d", tenant.ID)
+	dbHost := GetEnv("POSTGRES_HOST", "db")
+	dbPort := GetEnv("POSTGRES_PORT", "5432")
+	dbUser := GetEnv("POSTGRES_USER", "odoo")
+	dbPassword := GetEnv("POSTGRES_PASSWORD", "odoo")
+	hostProjectPath := GetEnv("HOST_PROJECT_PATH", "/home/nahom/Desktop/project/odoo_project")
+	tenantAddons := filepath.Join(hostProjectPath, "tenants", tenant.Subdomain, "custom_addons")
+
+	CallDockerAPI("DELETE", fmt.Sprintf("/containers/%s?force=true", containerName), nil)
+	config := ContainerConfig{
+		Image: "odoo_project-odoo:latest",
+		Cmd: []string{
+			"odoo", "--config=/dev/null", "--database", tenant.DbName,
+			"--db_host", dbHost, "--db_port", dbPort, "--db_user", dbUser, "--db_password", dbPassword,
+			"--addons-path=/mnt/tenant-addons,/mnt/platform-addons,/usr/lib/python3/dist-packages/odoo/addons",
+			"--init", moduleName, "--update", moduleName, "--stop-after-init", "--no-http",
+		},
+		HostConfig: HostConfig{NetworkMode: dockerNetwork, Binds: addonBinds(tenantAddons)},
+	}
+	resp, status, err := CallDockerAPI("POST", fmt.Sprintf("/containers/create?name=%s", containerName), config)
+	if err != nil {
+		return fmt.Errorf("failed to create maintenance container: %w", err)
+	}
+	if status >= 400 {
+		return fmt.Errorf("failed to create maintenance container (status %d): %s", status, string(resp))
+	}
+	defer CallDockerAPI("DELETE", fmt.Sprintf("/containers/%s?force=true", containerName), nil)
+	resp, status, err = CallDockerAPI("POST", fmt.Sprintf("/containers/%s/start", containerName), nil)
+	if err != nil {
+		return fmt.Errorf("failed to start maintenance container: %w", err)
+	}
+	if status >= 400 {
+		return fmt.Errorf("failed to start maintenance container (status %d): %s", status, string(resp))
+	}
+	resp, _, err = CallDockerAPI("POST", fmt.Sprintf("/containers/%s/wait", containerName), nil)
+	if err != nil {
+		return err
+	}
+	var result containerWaitResponse
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return err
+	}
+	if result.StatusCode != 0 {
+		logs, _, _ := CallDockerAPI("GET", fmt.Sprintf("/containers/%s/logs?stdout=true&stderr=true&tail=80", containerName), nil)
+		return fmt.Errorf("module maintenance exited with status %d: %s", result.StatusCode, ParseDockerLogs(logs))
+	}
+	return nil
+}
+
+func DockerStopTenant(tenantID int) error {
+	_, status, err := CallDockerAPI("POST", fmt.Sprintf("/containers/odoo_tenant_%d/stop?t=20", tenantID), nil)
+	if err != nil {
+		return err
+	}
+	if status >= 400 && status != http.StatusNotModified && status != http.StatusNotFound {
+		return fmt.Errorf("failed to stop tenant container: status %d", status)
+	}
 	return nil
 }
 

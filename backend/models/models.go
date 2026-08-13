@@ -28,3 +28,27 @@ type MobileDevice struct {
 	Platform    string    `json:"platform"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
+type CustomizationRelease struct {
+	ID          int        `json:"id" gorm:"primaryKey"`
+	TenantID    int        `json:"tenant_id" gorm:"index;not null"`
+	ModuleName  string     `json:"module_name" gorm:"not null"`
+	Version     int        `json:"version" gorm:"not null"`
+	State       string     `json:"state" gorm:"not null"`
+	FileCount   int        `json:"file_count"`
+	SizeBytes   int64      `json:"size_bytes"`
+	ArchiveHash string     `json:"archive_hash"`
+	Failure     string     `json:"failure,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	ActivatedAt *time.Time `json:"activated_at,omitempty"`
+}
+
+type PlatformAuditEvent struct {
+	ID        int       `json:"id" gorm:"primaryKey"`
+	TenantID  int       `json:"tenant_id" gorm:"index;not null"`
+	Action    string    `json:"action" gorm:"not null"`
+	Resource  string    `json:"resource"`
+	Status    string    `json:"status" gorm:"not null"`
+	Detail    string    `json:"detail"`
+	CreatedAt time.Time `json:"created_at"`
+}

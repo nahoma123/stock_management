@@ -3,12 +3,14 @@ package services
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -25,6 +27,16 @@ type CustomizationReport struct {
 	Files    int      `json:"files"`
 	Size     int64    `json:"size"`
 	Warnings []string `json:"warnings"`
+}
+
+type ReleaseActivation struct {
+	Module       string
+	PreviousPath string
+	ReleasePath  string
+}
+
+func tenantCustomizationRoot(tenantSubdomain string) string {
+	return filepath.Join(GetEnv("TENANT_DATA_ROOT", "/app/tenants"), tenantSubdomain, "custom_addons")
 }
 
 func ValidateCustomizationArchive(data []byte) (CustomizationReport, error) {
@@ -103,13 +115,17 @@ func ValidateCustomizationArchive(data []byte) (CustomizationReport, error) {
 
 	warnings := []string{
 		"Python modules execute with the tenant Odoo process and require operator review.",
-		"Deployment updates the tenant addon layer but does not automatically install the module.",
+		"Deployment stages the package; activation runs Odoo module installation or upgrade.",
 	}
 	sort.Strings(warnings)
 	return CustomizationReport{Module: moduleName, Files: len(reader.File), Size: totalSize, Warnings: warnings}, nil
 }
 
 func DeployCustomizationArchive(tenantSubdomain string, data []byte) (CustomizationReport, error) {
+	return StageCustomizationRelease(tenantSubdomain, 0, data)
+}
+
+func StageCustomizationRelease(tenantSubdomain string, releaseID int, data []byte) (CustomizationReport, error) {
 	if !tenantPathPattern.MatchString(tenantSubdomain) {
 		return CustomizationReport{}, fmt.Errorf("tenant has an unsafe subdomain")
 	}
@@ -117,7 +133,7 @@ func DeployCustomizationArchive(tenantSubdomain string, data []byte) (Customizat
 	if err != nil {
 		return CustomizationReport{}, err
 	}
-	root := filepath.Join("/app/tenants", tenantSubdomain, "custom_addons")
+	root := tenantCustomizationRoot(tenantSubdomain)
 	if err := os.MkdirAll(root, 0755); err != nil {
 		return CustomizationReport{}, err
 	}
@@ -157,24 +173,77 @@ func DeployCustomizationArchive(tenantSubdomain string, data []byte) (Customizat
 	}
 
 	sourceModule := filepath.Join(tempRoot, report.Module)
-	targetModule := filepath.Join(root, report.Module)
-	backupModule := filepath.Join(root, ".backups", report.Module)
-	if err := os.MkdirAll(filepath.Dir(backupModule), 0755); err != nil {
+	releaseName := strconv.Itoa(releaseID)
+	if releaseID == 0 {
+		releaseName = "manual"
+	}
+	targetModule := filepath.Join(root, ".releases", report.Module, releaseName)
+	if err := os.MkdirAll(filepath.Dir(targetModule), 0755); err != nil {
 		return CustomizationReport{}, err
 	}
-	os.RemoveAll(backupModule)
-	if _, err := os.Stat(targetModule); err == nil {
-		if err := os.Rename(targetModule, backupModule); err != nil {
-			return CustomizationReport{}, err
-		}
-	}
+	os.RemoveAll(targetModule)
 	if err := os.Rename(sourceModule, targetModule); err != nil {
-		if _, backupErr := os.Stat(backupModule); backupErr == nil {
-			_ = os.Rename(backupModule, targetModule)
-		}
 		return CustomizationReport{}, err
 	}
 	return report, nil
+}
+
+func ActivateCustomizationRelease(tenantSubdomain, moduleName string, releaseID int) (ReleaseActivation, error) {
+	if !tenantPathPattern.MatchString(tenantSubdomain) || !moduleNamePattern.MatchString(moduleName) {
+		return ReleaseActivation{}, fmt.Errorf("unsafe tenant or module name")
+	}
+	root := tenantCustomizationRoot(tenantSubdomain)
+	releasePath := filepath.Join(root, ".releases", moduleName, strconv.Itoa(releaseID))
+	if info, err := os.Stat(filepath.Join(releasePath, "__manifest__.py")); err != nil || info.IsDir() {
+		return ReleaseActivation{}, fmt.Errorf("release %d is not staged", releaseID)
+	}
+	activePath := filepath.Join(root, moduleName)
+	previousPath := ""
+	if target, err := os.Readlink(activePath); err == nil {
+		previousPath = target
+	} else if _, statErr := os.Stat(activePath); statErr == nil {
+		legacyPath := filepath.Join(root, ".releases", moduleName, "legacy")
+		os.RemoveAll(legacyPath)
+		if err := os.Rename(activePath, legacyPath); err != nil {
+			return ReleaseActivation{}, err
+		}
+		previousPath, err = filepath.Rel(root, legacyPath)
+		if err != nil {
+			return ReleaseActivation{}, err
+		}
+	}
+	temporaryLink := activePath + ".next"
+	os.Remove(temporaryLink)
+	releaseTarget, err := filepath.Rel(root, releasePath)
+	if err != nil {
+		return ReleaseActivation{}, err
+	}
+	if err := os.Symlink(releaseTarget, temporaryLink); err != nil {
+		return ReleaseActivation{}, err
+	}
+	if err := os.Rename(temporaryLink, activePath); err != nil {
+		os.Remove(temporaryLink)
+		return ReleaseActivation{}, err
+	}
+	return ReleaseActivation{Module: moduleName, PreviousPath: previousPath, ReleasePath: releasePath}, nil
+}
+
+func RestoreCustomizationActivation(tenantSubdomain string, activation ReleaseActivation) error {
+	activePath := filepath.Join(tenantCustomizationRoot(tenantSubdomain), activation.Module)
+	if activation.PreviousPath == "" {
+		return os.Remove(activePath)
+	}
+	temporaryLink := activePath + ".restore"
+	os.Remove(temporaryLink)
+	if err := os.Symlink(activation.PreviousPath, temporaryLink); err != nil {
+		return err
+	}
+	return os.Rename(temporaryLink, activePath)
+}
+
+func CustomizationArchiveHash(data []byte) string {
+	value := sha256.Sum256(data)
+	return fmt.Sprintf("%x", value[:])
 }
 
 func readZipFile(file *zip.File, limit int64) ([]byte, error) {

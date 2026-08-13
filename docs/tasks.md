@@ -51,4 +51,6 @@
 - [x] Add central health and installed-module monitoring
 - [x] Add isolated customization package validation and deployment
 - [x] Add superadmin monitoring and customization controls
-- [ ] Add staging promotion, automated module installation, and rollback releases
+- [x] Add versioned staging, automated module maintenance, and rollback releases
+- [x] Add protected monitoring enrollment for existing tenants
+- [x] Add central release and operator audit records

@@ -30,8 +30,13 @@ func main() {
 		api.PUT("/tenants/:id/expiry", handlers.SetTenantExpiry)
 		api.DELETE("/tenants/:id", handlers.DeleteTenant)
 		api.GET("/tenants/:id/monitoring", handlers.GetTenantMonitoring)
+		api.POST("/tenants/:id/monitoring/enroll", handlers.EnrollTenantMonitoring)
+		api.GET("/tenants/:id/audit", handlers.GetTenantAudit)
+		api.GET("/tenants/:id/customizations/releases", handlers.GetCustomizationReleases)
 		api.POST("/tenants/:id/customizations/validate", handlers.ValidateTenantCustomization)
 		api.POST("/tenants/:id/customizations/deploy", handlers.DeployTenantCustomization)
+		api.POST("/tenants/:id/customizations/releases/:release_id/activate", handlers.ActivateCustomizationRelease)
+		api.POST("/tenants/:id/customizations/releases/:release_id/rollback", handlers.RollbackCustomizationRelease)
 
 		api.GET("/mobile/tenants", handlers.GetTenantsList)
 		api.POST("/mobile/login", handlers.MobileLogin)
