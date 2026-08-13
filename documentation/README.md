@@ -23,3 +23,4 @@ development. Use `npm run build` for a production snapshot, or start the Compose
 - Product and testing: `http://localhost:4174/#/team/product-testing`
 - Operations: `http://localhost:4174/#/team/operations`
 - Developer docs: `http://localhost:4174/#/01_introduction_saas_overview`
+- Finalization plan: `http://localhost:4174/#/finalization_plan`

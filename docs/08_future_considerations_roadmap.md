@@ -2,6 +2,8 @@
 
 This page contains work not implemented in the current system. Completed capabilities belong in [Feature Status](./feature_status.md), not here.
 
+The dependency-ordered execution plan is maintained in [Platform Finalization Plan](./finalization_plan.md).
+
 ## Priority: security and operability
 
 - Operator authentication, roles, session management, and audit attribution

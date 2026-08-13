@@ -13,6 +13,7 @@ These are the maintained source documents rendered by the website in `documentat
 
 - [System overview](./01_introduction_saas_overview.md)
 - [Feature status](./feature_status.md)
+- [Platform finalization plan](./finalization_plan.md)
 - [Docker configuration](./02_docker_configuration.md)
 - [Local development](./03_local_development_setup.md)
 - [Production readiness](./04_production_deployment_guide.md)
