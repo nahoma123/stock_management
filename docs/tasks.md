@@ -29,3 +29,11 @@
 - [x] Clean up Orphaned Docker Containers
 - [x] Modularize Go Backend
 - [x] Verify functionality
+
+## Flutter Mobile Application Scaffolding
+- [/] Document task in docs/tasks.md
+- [ ] Scaffold Flutter Project Template
+- [ ] Configure pubspec.yaml Dependencies
+- [ ] Setup Architecture Skeleton (Core & Feature folders)
+- [ ] Implement Core Network, Theme, and Storage Utilities
+- [ ] Verify Scaffolding via flutter analyze

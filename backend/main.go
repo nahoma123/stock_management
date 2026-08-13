@@ -29,12 +29,14 @@ func main() {
 		api.POST("/tenants/:id/enable", handlers.EnableTenant)
 		api.PUT("/tenants/:id/expiry", handlers.SetTenantExpiry)
 		api.DELETE("/tenants/:id", handlers.DeleteTenant)
-		
+
+		api.GET("/mobile/tenants", handlers.GetTenantsList)
+		api.POST("/mobile/login", handlers.MobileLogin)
 		api.GET("/mobile/stats", handlers.GetMobileStats)
 		api.POST("/mobile/devices", handlers.RegisterDevice)
 		api.DELETE("/mobile/devices/:token", handlers.UnregisterDevice)
 		api.PUT("/mobile/settings", handlers.UpdateMobileSettings)
-		
+
 		api.POST("/webhooks/odoo/sale", handlers.HandleOdooSaleWebhook)
 	}
 

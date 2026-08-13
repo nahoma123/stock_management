@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -154,7 +157,6 @@ func GetMobileStats(c *gin.Context) {
 		"top_products":  topProducts,
 	})
 }
-
 func authenticateMobileAPI(c *gin.Context) (models.Tenant, bool) {
 	apiKey := c.GetHeader("X-API-Key")
 	if apiKey == "" {
@@ -239,4 +241,95 @@ func UpdateMobileSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Settings updated successfully", "min_notification_amount": req.MinNotificationAmount})
+}
+
+// GetTenantsList returns a list of active tenants for the mobile app dropdown
+func GetTenantsList(c *gin.Context) {
+	var tenants []models.Tenant
+	// Only return basic info for active tenants
+	if err := database.DB.Select("id", "name", "subdomain").Where("state = ?", "active").Find(&tenants).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tenants"})
+		return
+	}
+
+	var response []map[string]interface{}
+	for _, t := range tenants {
+		response = append(response, map[string]interface{}{
+			"id":        t.ID,
+			"name":      t.Name,
+			"subdomain": t.Subdomain,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// MobileLogin authenticates an Odoo user and returns the Tenant's API Key
+func MobileLogin(c *gin.Context) {
+	var req struct {
+		TenantID int    `json:"tenant_id" binding:"required"`
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var tenant models.Tenant
+	if err := database.DB.Where("id = ?", req.TenantID).First(&tenant).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	if tenant.State != "active" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tenant is not active"})
+		return
+	}
+
+	// Prepare JSON-RPC request to Odoo container
+	payload := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"params": map[string]interface{}{
+			"db":       tenant.DbName,
+			"login":    req.Email,
+			"password": req.Password,
+		},
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	// Since we are running in docker, the odoo container is accessible at http://odoo:8069
+	resp, err := http.Post("http://odoo:8069/web/session/authenticate", "application/json", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to authentication server"})
+		return
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+
+	var odooResp struct {
+		Result *struct {
+			UID int `json:"uid"`
+		} `json:"result"`
+		Error *interface{} `json:"error"`
+	}
+
+	if err := json.Unmarshal(body, &odooResp); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid response from authentication server"})
+		return
+	}
+
+	// If Result is nil or Error is not nil, auth failed
+	if odooResp.Error != nil || odooResp.Result == nil || odooResp.Result.UID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	// Auth successful, return the API Key so the mobile app can continue using existing endpoints
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Login successful",
+		"api_key": tenant.ApiKey,
+	})
 }

@@ -11,6 +11,7 @@ This project is a multi-tenant Odoo SaaS platform. It uses Docker for containeri
 *   **Odoo Backend:** Odoo (Python), version 17.
 *   **Superadmin Backend:** Go, Gin Framework, Gorilla WebSocket
 *   **Superadmin Frontend:** React, Vite
+*   **Mobile App:** Flutter, Dart, Riverpod
 *   **Database:** PostgreSQL
 *   **Containerization:** Docker, Docker Compose
 
@@ -18,10 +19,10 @@ This project is a multi-tenant Odoo SaaS platform. It uses Docker for containeri
 
 *   `custom_addons/`: Contains custom Odoo modules.
     *   `boutique_theme/`: A custom theme for the Odoo backend.
-    *   `saas_management_tools/`: Tools for managing SaaS tenants.
     *   `shopping_portal/`: A multi-instance shopping portal.
 *   `backend/`: Contains the Go backend for the superadmin panel.
 *   `frontend/`: Contains the React frontend for the superadmin panel.
+*   `mobile_app/`: Contains the Flutter mobile application for tenants.
 *   `docs/`: Project documentation.
 *   `docker-compose.yml`: Defines the Docker services for the Odoo application, database, and superadmin.
 *   `Dockerfile.odoo`: Dockerfile for the Odoo application.
@@ -55,12 +56,6 @@ These files are present in each custom addon directory and define the addon's me
 *   **Purpose:** Provides a custom theme and UI for the Odoo backend.
 *   **Dependencies:** `base`, `web`, `stock`, `point_of_sale`, `crm`
 *   **Key Files:** `views/web_layout.xml`, `views/menu_items.xml`, `static/src/scss/theme.scss`
-
-### `saas_management_tools`
-
-*   **Purpose:** Provides tools for creating and managing SaaS tenants.
-*   **Dependencies:** `base`
-*   **Key Files:** `views/saas_tenant_views.xml`, `wizards/tenant_creation_wizard.py`
 
 ### `shopping_portal`
 
@@ -105,6 +100,15 @@ my_module/
 *   **Odoo Caching:** When making changes to `__manifest__.py` or other non-Python files, a simple browser refresh is not enough. You must either use the "Update Apps List" feature or, more reliably, restart the Odoo server container to ensure changes are loaded.
 
 ## 9. Recent Activity Log (What happened last time?)
+
+*   **When:** May 22, 2026
+*   **What:** Completed project refactoring/cleanup and initiated Flutter mobile app scaffolding.
+*   **Why:** Declutter project codebase, establish standard git ignore rules, and setup a robust scaffolding for the tenant dashboard app.
+*   **How:**
+    1. Committed deletion of old Odoo-based superadmin module.
+    2. Updated gitignore to exclude local Go backend binaries and log files.
+    3. Checked and verified modularized Go backend packages (database, handlers, models, services, websocket) running inside the Docker network.
+    4. Scaffolded the Flutter project under `mobile_app/` with clean architecture design patterns.
 
 *   **When:** September 15, 2025
 *   **What:** Updated the project documentation to reflect the new superadmin architecture.
