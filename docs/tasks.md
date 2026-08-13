@@ -37,3 +37,10 @@
 - [ ] Setup Architecture Skeleton (Core & Feature folders)
 - [ ] Implement Core Network, Theme, and Storage Utilities
 - [ ] Verify Scaffolding via flutter analyze
+
+## Initial Product Data Import
+- [x] Add CSV and XLSX upload wizard with preview and validation
+- [x] Map products, ETB/USD prices, embedded primary pictures, and opening stock
+- [x] Add Machine Code upsert behavior and Model Code product field
+- [x] Install Inventory and importer for newly provisioned tenants
+- [ ] Verify import against a representative customer workbook

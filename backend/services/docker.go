@@ -25,6 +25,14 @@ type HostConfig struct {
 	RestartPolicy RestartPolicy `json:"RestartPolicy,omitempty"`
 }
 
+func addonBinds(hostVolumePath string) []string {
+	hostProjectPath := GetEnv("HOST_PROJECT_PATH", "/home/nahom/Desktop/project/odoo_project")
+	return []string{
+		fmt.Sprintf("%s:/mnt/tenant-addons", hostVolumePath),
+		fmt.Sprintf("%s/custom_addons:/mnt/platform-addons:ro", hostProjectPath),
+	}
+}
+
 type ContainerConfig struct {
 	Image      string            `json:"Image"`
 	Cmd        []string          `json:"Cmd"`
@@ -79,7 +87,7 @@ func EnsureDummyModuleExists(subdomain string) error {
 	if err := os.MkdirAll(tenantPath, 0755); err != nil {
 		return err
 	}
-	
+
 	dummyModulePath := filepath.Join(tenantPath, "dummy_module")
 	if err := os.MkdirAll(dummyModulePath, 0755); err != nil {
 		return err
@@ -120,13 +128,13 @@ func DockerCreateAndStartInitContainer(tenant models.Tenant, dbHost, dbPort, dbU
 		Cmd: []string{
 			"odoo", "--config=/dev/null", "--database", tenant.DbName,
 			"--db_host", dbHost, "--db_port", dbPort, "--db_user", dbUser, "--db_password", dbPassword,
-			"--addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons",
-			"--init", "base,web,sale_management,daily_sales_report",
+			"--addons-path=/mnt/tenant-addons,/mnt/platform-addons,/usr/lib/python3/dist-packages/odoo/addons",
+			"--init", "base,web,sale_management,stock,daily_sales_report,initial_data_import",
 			"--stop-after-init",
 		},
 		HostConfig: HostConfig{
 			NetworkMode: dockerNetwork,
-			Binds:       []string{fmt.Sprintf("%s:/mnt/extra-addons", hostVolumePath)},
+			Binds:       addonBinds(hostVolumePath),
 		},
 	}
 
@@ -173,7 +181,7 @@ func DockerCreateAndStartDaemonContainer(tenant models.Tenant, dbHost, dbPort, d
 		Image: "odoo_project-odoo:latest",
 		Cmd: []string{
 			"odoo", "-r", dbUser, "-w", dbPassword, "--db_host", dbHost, "--db_port", dbPort, "--database", tenant.DbName,
-			"--addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons",
+			"--addons-path=/mnt/tenant-addons,/mnt/platform-addons,/usr/lib/python3/dist-packages/odoo/addons",
 		},
 		Env: []string{
 			fmt.Sprintf("DB_HOST=%s", dbHost),
@@ -183,15 +191,15 @@ func DockerCreateAndStartDaemonContainer(tenant models.Tenant, dbHost, dbPort, d
 		},
 		HostConfig: HostConfig{
 			NetworkMode: dockerNetwork,
-			Binds:       []string{fmt.Sprintf("%s:/mnt/extra-addons", hostVolumePath)},
+			Binds:       addonBinds(hostVolumePath),
 			RestartPolicy: RestartPolicy{
 				Name: "unless-stopped",
 			},
 		},
 		Labels: map[string]string{
-			"traefik.enable":                                                  "true",
-			fmt.Sprintf("traefik.http.routers.%s.rule", containerName):        fmt.Sprintf("Host(`%s.localhost`)", tenant.Subdomain),
-			fmt.Sprintf("traefik.http.routers.%s.entrypoints", containerName): "web",
+			"traefik.enable": "true",
+			fmt.Sprintf("traefik.http.routers.%s.rule", containerName):                      fmt.Sprintf("Host(`%s.localhost`)", tenant.Subdomain),
+			fmt.Sprintf("traefik.http.routers.%s.entrypoints", containerName):               "web",
 			fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port", containerName): "8069",
 		},
 	}
